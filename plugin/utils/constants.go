@@ -14,3 +14,8 @@ const (
 	ConfigKeyUserAgent  = "musixmatch_user_agent"
 	ConfigKeyHTTPAccept = "musixmatch_http_accept"
 )
+
+const (
+	MusixmatchSearchPageURL = "https://www.musixmatch.com/_next/data/wJzHKhbhsIOkKhgBolxoI/en/search.json?query="
+	MusixmatchFetchPageURL  = "https://www.musixmatch.com/lyrics/%s/%s"
+)

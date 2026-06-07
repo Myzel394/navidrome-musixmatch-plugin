@@ -23,6 +23,12 @@
           "default": "",
           "description": "Your MusixMatch user token. Log in to MusixMatch >> Open DevTools >> Application tab >> Cookies >> https://www.musixmatch.com >> copy the value of the 'musixmatchUserToken' cookie and paste it here."
         },
+        "musixmatch_captcha_id": {
+          "type": "string",
+          "title": "Musixmatch Captcha ID",
+          "default": "",
+          "description": "If you encounter a captcha when searching MusixMatch, open the search page in your browser, solve the captcha, and then copy the 'captcha_id' cookie value here. This will allow the plugin to bypass the captcha for future searches."
+        },
         "musixmatch_user_agent": {
           "type": "string",
           "title": "User-Agent",

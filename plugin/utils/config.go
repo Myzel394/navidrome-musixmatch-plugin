@@ -24,3 +24,8 @@ func ConfigUserAgent() string {
 func ConfigSearchHTTPAcceptHeader() string {
 	return getConfigString(ConfigKeyHTTPAccept, DefaultHTTPAccept)
 }
+
+func ConfigCaptchaID() string {
+	v, _ := pdk.GetConfig(ConfigKeyCaptchaID)
+	return v
+}

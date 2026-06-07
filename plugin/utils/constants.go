@@ -13,6 +13,7 @@ const (
 	ConfigKeyUserToken  = "musixmatch_user_token"
 	ConfigKeyUserAgent  = "musixmatch_user_agent"
 	ConfigKeyHTTPAccept = "musixmatch_http_accept"
+	ConfigKeyCaptchaID  = "musixmatch_captcha_id"
 )
 
 const (

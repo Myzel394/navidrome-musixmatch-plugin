@@ -19,6 +19,7 @@ func DoGetRequest(endpoint string) ([]byte, error) {
 
 	resp := req.Send()
 	if resp.Status() != HTTPStatusOK {
+		LogErrorf("HTTP %d from %s", resp.Status(), endpoint)
 		return resp.Body(), fmt.Errorf("error code %d returned from Musixmatch for endpoint %s", resp.Status(), endpoint)
 	}
 	return resp.Body(), nil

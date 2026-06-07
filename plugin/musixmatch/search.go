@@ -40,25 +40,32 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error) {
 	query := fmt.Sprintf("%s %s", normArtist, normTitle)
 	endpoint := fmt.Sprintf(utils.MusixmatchSearchPageURL, url.QueryEscape(query))
 
+	utils.LogInfof("searching for '%s' -> %s", query, endpoint)
+
 	body, err := utils.DoGetRequest(endpoint)
 	if err != nil || body == nil {
+		utils.LogErrorf("search request failed for '%s': %v", query, err)
 		return nil, fmt.Errorf("failed to do musixmatch search request for query %s; Error: %v", query, err)
 	}
 
 	var resp searchResponse
 	if err := json.Unmarshal(body, &resp); err != nil {
+		utils.LogErrorf("search parse failed for '%s': %v", query, err)
 		return nil, fmt.Errorf("failed to parse musixmatch search response for query %s: %v", query, err)
 	}
 
 	searchResponse := resp.PageProps.Data.OpenSearch.Data.OpenSearchTrackSearch.Body
 
 	if searchResponse.BestMatch != nil && searchResponse.BestMatch.Type == "track" {
+		utils.LogInfof("search found bestMatch: '%s' by '%s' (vanity: %s)", searchResponse.BestMatch.TrackName, searchResponse.BestMatch.ArtistName, searchResponse.BestMatch.CommontrackVanityID)
 		return &Song{Artist: searchResponse.BestMatch.ArtistName, Title: searchResponse.BestMatch.TrackName, CommontrackVanityID: searchResponse.BestMatch.CommontrackVanityID}, nil
 	}
 
 	if len(searchResponse.Tracks) > 0 {
+		utils.LogInfof("search fallback to tracks[0]: '%s' by '%s' (vanity: %s)", searchResponse.Tracks[0].TrackName, searchResponse.Tracks[0].ArtistName, searchResponse.Tracks[0].CommontrackVanityID)
 		return &Song{Artist: searchResponse.Tracks[0].ArtistName, Title: searchResponse.Tracks[0].TrackName, CommontrackVanityID: searchResponse.Tracks[0].CommontrackVanityID}, nil
 	}
 
+	utils.LogInfof("search returned no results for '%s'", query)
 	return nil, nil
 }

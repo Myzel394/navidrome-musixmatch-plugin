@@ -11,6 +11,7 @@ import (
 func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error) {
 	resp, err := musixmatch.FetchLyrics(input)
 	if err != nil {
+		utils.LogErrorf("GetLyrics failed: %v", err)
 		return resp, fmt.Errorf("%s%w", utils.LogPrefix, err)
 	}
 	return resp, nil

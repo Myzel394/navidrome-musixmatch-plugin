@@ -1,0 +1,53 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+
+      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build plugin
+        run: nix build .#default
+
+      - name: Stage artifact
+        run: |
+          mkdir -p dist
+          cp result/bin/navidrome-shazam-plugin.ndp dist/
+          sha256sum dist/navidrome-shazam-plugin.ndp | tee dist/navidrome-shazam-plugin.ndp.sha256
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: dist/navidrome-shazam-plugin.ndp
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: navidrome-shazam-plugin
+          path: |
+            dist/navidrome-shazam-plugin.ndp
+            dist/navidrome-shazam-plugin.ndp.sha256
+
+      - name: Create release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/navidrome-shazam-plugin.ndp
+            dist/navidrome-shazam-plugin.ndp.sha256
+          generate_release_notes: true

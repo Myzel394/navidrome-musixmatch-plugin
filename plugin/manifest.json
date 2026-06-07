@@ -1,0 +1,110 @@
+{
+  "name": "Shazam Plugin",
+  "author": "Myzel394",
+  "version": "0.1.0",
+  "description": "Scrape lyrics from Shazam",
+  "website": "https://git.nerdvpn.de/Myzel394/navidrome-shazam-plugin",
+  "permissions": {
+    "http": {
+      "reason": "To search & fetch your lyrics from Shazam",
+      "requiredHosts": [
+        "www.shazam.com",
+        "cdn.shazam.com"
+      ]
+    }
+  },
+  "config": {
+    "schema": {
+      "type": "object",
+      "title": "Shazam Plugin Settings",
+      "properties": {
+        "shazam_search_country": {
+          "type": "string",
+          "title": "Search Country",
+          "default": "US",
+          "description": "ISO country code used when searching Shazam. Set this to your country for best results."
+        },
+        "shazam_language": {
+          "type": "string",
+          "title": "Language",
+          "default": "en",
+          "description": "Preferred language code for lyrics results."
+        },
+        "shazam_search_limit": {
+          "type": "integer",
+          "title": "Search Result Limit",
+          "default": 10,
+          "description": "Maximum number of search results fetched from Shazam."
+        },
+        "shazam_search_levenshtein_threshold": {
+          "type": "string",
+          "title": "Match Threshold",
+          "default": "0.85",
+          "description": "Minimum Levenshtein similarity (0–1) required to accept a Shazam result as a match."
+        },
+        "shazam_user_agent": {
+          "type": "string",
+          "title": "User-Agent",
+          "default": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
+          "description": "User-Agent header sent to Shazam. The default mimics mobile Safari."
+        },
+        "shazam_http_accept": {
+          "type": "string",
+          "title": "HTTP Accept Header",
+          "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+          "description": "Accept header sent to Shazam."
+        },
+        "shazam_cookie": {
+          "type": "string",
+          "title": "Cookie Header",
+          "default": "",
+          "description": "Raw Cookie header value. Optional — set this to use a specific Shazam session or work around rate limits."
+        }
+      }
+    },
+    "uiSchema": {
+      "type": "VerticalLayout",
+      "elements": [
+        {
+          "type": "Control",
+          "scope": "#/properties/shazam_search_country"
+        },
+        {
+          "type": "Group",
+          "label": "Advanced",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/shazam_language"
+            },
+            {
+              "type": "HorizontalLayout",
+              "elements": [
+                {
+                  "type": "Control",
+                  "scope": "#/properties/shazam_search_limit"
+                },
+                {
+                  "type": "Control",
+                  "scope": "#/properties/shazam_search_levenshtein_threshold"
+                }
+              ]
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/shazam_user_agent"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/shazam_http_accept"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/shazam_cookie"
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

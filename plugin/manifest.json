@@ -8,7 +8,7 @@
     "http": {
       "reason": "To search & fetch your lyrics from MusixMatch",
       "requiredHosts": [
-        "www.musixmatch.com",
+        "www.musixmatch.com"
       ]
     }
   },
@@ -21,7 +21,7 @@
           "type": "string",
           "title": "Musixmatch User Token",
           "default": "",
-          "description": "Your MusixMatch user token. Log in to MusixMatch >> open DevTools >> Application tab >> Cookies >> https://www.musixmatch.com >> copy the value of the 'musixmatchUserToken' cookie and paste it here."
+          "description": "Your MusixMatch user token. Log in to MusixMatch >> Open DevTools >> Application tab >> Cookies >> https://www.musixmatch.com >> copy the value of the 'musixmatchUserToken' cookie and paste it here."
         },
         "musixmatch_user_agent": {
           "type": "string",
@@ -34,7 +34,7 @@
           "title": "HTTP Accept Header",
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Shazam."
-        },
+        }
       }
     },
     "uiSchema": {

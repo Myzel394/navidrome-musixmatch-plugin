@@ -5,12 +5,14 @@ import (
 )
 
 type Song struct {
-	Artist string
-	Title  string
+	Artist              string
+	Title               string
+	CommontrackVanityID string
 }
 
 func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error) {
 	track, err := searchForTrack(input)
+
 	if err != nil || track == nil {
 		return lyrics.GetLyricsResponse{}, err
 	}

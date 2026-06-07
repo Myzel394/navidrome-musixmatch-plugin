@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/Myzel394/navidrome-shazam-plugin/plugin/shazam"
-	"github.com/Myzel394/navidrome-shazam-plugin/plugin/utils"
+	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/shazam"
+	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
 

@@ -1,6 +1,6 @@
 package utils
 
-const LogPrefix = "navidrome-shazam-plugin: "
+const LogPrefix = "navidrome-musixmatch-plugin: "
 
 const HTTPStatusOK = 200
 

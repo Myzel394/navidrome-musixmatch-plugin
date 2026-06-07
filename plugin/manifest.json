@@ -3,7 +3,7 @@
   "author": "Myzel394",
   "version": "0.1.0",
   "description": "Scrape lyrics from Shazam",
-  "website": "https://git.nerdvpn.de/Myzel394/navidrome-shazam-plugin",
+  "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
     "http": {
       "reason": "To search & fetch your lyrics from Shazam",

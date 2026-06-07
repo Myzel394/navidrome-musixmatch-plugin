@@ -1,4 +1,4 @@
-module github.com/Myzel394/navidrome-shazam-plugin/plugin
+module github.com/Myzel394/navidrome-musixmatch-plugin/plugin
 
 go 1.25.0
 

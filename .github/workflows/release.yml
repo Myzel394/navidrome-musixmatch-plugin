@@ -28,26 +28,26 @@ jobs:
       - name: Stage artifact
         run: |
           mkdir -p dist
-          cp result/bin/navidrome-shazam-plugin.ndp dist/
-          sha256sum dist/navidrome-shazam-plugin.ndp | tee dist/navidrome-shazam-plugin.ndp.sha256
+          cp result/bin/navidrome-musixmatch-plugin.ndp dist/
+          sha256sum dist/navidrome-musixmatch-plugin.ndp | tee dist/navidrome-musixmatch-plugin.ndp.sha256
 
       - name: Attest build provenance
         uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
         with:
-          subject-path: dist/navidrome-shazam-plugin.ndp
+          subject-path: dist/navidrome-musixmatch-plugin.ndp
 
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: navidrome-shazam-plugin
+          name: navidrome-musixmatch-plugin
           path: |
-            dist/navidrome-shazam-plugin.ndp
-            dist/navidrome-shazam-plugin.ndp.sha256
+            dist/navidrome-musixmatch-plugin.ndp
+            dist/navidrome-musixmatch-plugin.ndp.sha256
 
       - name: Create release
         if: startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/navidrome-shazam-plugin.ndp
-            dist/navidrome-shazam-plugin.ndp.sha256
+            dist/navidrome-musixmatch-plugin.ndp
+            dist/navidrome-musixmatch-plugin.ndp.sha256
           generate_release_notes: true

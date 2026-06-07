@@ -18,7 +18,7 @@
         version = "0.1.0";
         pkgs = import nixpkgs { inherit system; };
         plugin = pkgs.buildGo125Module {
-          pname = "navidrome-shazam-plugin";
+          pname = "navidrome-musixmatch-plugin";
           version = version;
 
           src = ./plugin;
@@ -53,7 +53,7 @@
       {
         packages.wasmPlugin = plugin;
         packages.default = pkgs.stdenv.mkDerivation {
-          name = "navidrome-shazam-plugin-dev";
+          name = "navidrome-musixmatch-plugin-dev";
 
           src = plugin;
 
@@ -83,7 +83,7 @@
 
           installPhase = ''
             mkdir -p $out/bin
-            cp out.zip $out/bin/navidrome-shazam-plugin.ndp
+            cp out.zip $out/bin/navidrome-musixmatch-plugin.ndp
           '';
         };
 

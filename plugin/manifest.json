@@ -8,6 +8,7 @@
     "http": {
       "reason": "To search & fetch your lyrics from MusixMatch",
       "requiredHosts": [
+        "apic-desktop.musixmatch.com",
         "www.musixmatch.com"
       ]
     }

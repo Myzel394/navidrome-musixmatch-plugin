@@ -13,6 +13,11 @@ type Song struct {
 
 func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error) {
 	utils.LogInfof("FetchLyrics: artist='%s' title='%s'", input.Track.Artist, input.Track.Title)
+	if resp, err := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
+		return resp, nil
+	} else if err != nil {
+		utils.LogErrorf("FetchLyrics desktop API fallback: %v", err)
+	}
 
 	track, err := searchForTrack(input)
 	if err != nil {

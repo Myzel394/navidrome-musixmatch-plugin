@@ -1,11 +1,14 @@
 package musixmatch
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	desktopAppID       = "web-desktop-app-v1.0"
 	desktopTokenCache  = "musixmatch_desktop_user_token"
-	desktopTokenTTL    = 10 * 60 // 10 minutes
+	desktopTokenTTL    = 10 * time.Minute
 	desktopUserAgent   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
 	desktopAPISuccess  = 200
 	desktopAPIBlocked  = 401

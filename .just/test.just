@@ -5,14 +5,15 @@
 fetch-lyrics:
     #!/usr/bin/env bash
     set -euo pipefail
-    auth='u={{username}}&p={{password}}&v=1.16.0&c=test&f=json'
-    song_id=$(
-        curl -s "http://localhost:4533/rest/getRandomSongs?$auth" \
-        | jq -r '.["subsonic-response"].randomSongs.song[0].id'
+    auth='u=admin&p=password&v=1.16.0&c=test&f=json'
+    song=$(
+        curl -fsS "http://localhost:4533/rest/getRandomSongs?size=1&$auth" \
+        | jq -r '.["subsonic-response"].randomSongs.song[0]'
     )
+    artist=$(jq -nr --arg value "$(jq -r '.artist' <<<"$song")" '$value|@uri')
+    title=$(jq -nr --arg value "$(jq -r '.title' <<<"$song")" '$value|@uri')
     lyrics=$(
-        curl -s "http://localhost:4533/rest/getLyricsBySongId?id=$song_id&$auth" \
-        
+        curl -fsS "http://localhost:4533/rest/getLyrics?artist=$artist&title=$title&$auth"
     )
     echo "$lyrics"
 

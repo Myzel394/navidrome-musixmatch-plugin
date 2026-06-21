@@ -48,8 +48,13 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error) {
 		return nil, fmt.Errorf("failed to do musixmatch search request for query %s; Error: %v", query, err)
 	}
 
+	matches := nextDataRe.FindSubmatch(body)
+	if len(matches) < 2 {
+		return nil, fmt.Errorf("failed to find musixmatch search Next.js data for query %s", query)
+	}
+
 	var resp searchResponse
-	if err := json.Unmarshal(body, &resp); err != nil {
+	if err := json.Unmarshal(matches[1], &resp); err != nil {
 		utils.LogErrorf("search parse failed for '%s': %v", query, err)
 		return nil, fmt.Errorf("failed to parse musixmatch search response for query %s: %v", query, err)
 	}

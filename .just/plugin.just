@@ -20,12 +20,12 @@ test:
 build:
     tinygo build -o plugin.wasm -target wasip1 -buildmode=c-shared .
 
-# Non-minified wasm build: disables optimizations and keeps debug
+# Fast dev wasm build using the standard Go compiler.
 [group('plugin'), working-directory: "plugin"]
 build-dev:
-    tinygo build -o plugin.wasm -target wasip1 -buildmode=c-shared -opt=0 .
+    GOOS=wasip1 GOARCH=wasm go build -buildvcs=false -buildmode=c-shared -o plugin.wasm .
 
 # Bundle wasm + manifest into a distributable .ndp archive.
 [group('plugin'), working-directory: "plugin"]
 pack:
-    zip -j {{plugin_name}}.ndp manifest.json plugin.wasm
+    zip -0 -j {{plugin_name}}.ndp manifest.json plugin.wasm

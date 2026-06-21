@@ -29,7 +29,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 		return lyrics.GetLyricsResponse{}, err
 	}
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
-		_ = host.CacheSetString(desktopTokenCache, "", 1)
+		_ = host.CacheRemove(desktopTokenCache)
 		return lyrics.GetLyricsResponse{}, fmt.Errorf("desktop API returned 401 for lyrics request")
 	}
 	if resp.Message.Header.StatusCode != desktopAPISuccess {
@@ -71,10 +71,10 @@ func desktopLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values 
 }
 
 func desktopUserToken() (string, error) {
-	if token, ok, err := host.CacheGetString(desktopTokenCache); err == nil && ok && token != "" {
-		return token, nil
-	} else if err != nil {
+	if token, ok, err := host.CacheGetString(desktopTokenCache); err != nil {
 		utils.LogErrorf("desktop API token cache read failed: %v", err)
+	} else if ok && token != "" {
+		return token, nil
 	}
 
 	query := url.Values{}
@@ -99,7 +99,7 @@ func desktopUserToken() (string, error) {
 		return "", fmt.Errorf("desktop API returned empty token")
 	}
 
-	if err := host.CacheSetString(desktopTokenCache, body.UserToken, desktopTokenTTL); err != nil {
+	if err := host.CacheSetString(desktopTokenCache, body.UserToken, int64(desktopTokenTTL/time.Second)); err != nil {
 		utils.LogErrorf("desktop API token cache write failed: %v", err)
 	}
 

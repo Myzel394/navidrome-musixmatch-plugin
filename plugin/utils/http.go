@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"net/url"
 	"strings"
 
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
@@ -16,10 +17,10 @@ func DoGetRequest(endpoint string) ([]byte, error) {
 	cookies := make([]string, 0, 2)
 
 	if musixmatchCookie != "" {
-		cookies = append(cookies, "musixmatchUserToken="+musixmatchCookie)
+		cookies = append(cookies, "musixmatchUserToken="+url.QueryEscape(musixmatchCookie))
 
 		if musixmatchConfigID != "" {
-			cookies = append(cookies, "captcha_id="+musixmatchConfigID)
+			cookies = append(cookies, "captcha_id="+url.QueryEscape(musixmatchConfigID))
 		}
 	}
 

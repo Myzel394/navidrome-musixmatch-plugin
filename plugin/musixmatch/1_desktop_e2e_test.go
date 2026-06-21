@@ -52,6 +52,8 @@ func mockDesktopAPI(t *testing.T) {
 	tokenBody := mustGetDesktopTokenBody(t)
 	macroBody := mustGetDesktopMacroBody(t, tokenBody)
 
+	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Once()
+	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Once()
 	pdk.PDKMock.On("Log", mock.Anything, mock.Anything).Return()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
 		return strings.Contains(endpoint, "token.get")
@@ -62,14 +64,11 @@ func mockDesktopAPI(t *testing.T) {
 	})).Return(&pdk.HTTPRequest{}).Once()
 	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Once()
 
-	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Once()
-	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL)).Return(nil).Once()
-
 	t.Cleanup(func() {
-		pdk.PDKMock.ExpectedCalls = nil
-		pdk.PDKMock.Calls = nil
 		host.CacheMock.ExpectedCalls = nil
 		host.CacheMock.Calls = nil
+		pdk.PDKMock.ExpectedCalls = nil
+		pdk.PDKMock.Calls = nil
 	})
 }
 

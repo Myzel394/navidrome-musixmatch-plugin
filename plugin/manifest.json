@@ -11,6 +11,9 @@
         "apic-desktop.musixmatch.com",
         "www.musixmatch.com"
       ]
+    },
+    "cache": {
+      "reason": "To cache the anonymous Musixmatch desktop API token between lyrics requests"
     }
   },
   "config": {

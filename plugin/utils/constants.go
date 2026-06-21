@@ -17,7 +17,7 @@ const (
 )
 
 const (
-	MusixmatchSearchPageURL = "https://www.musixmatch.com/_next/data/wJzHKhbhsIOkKhgBolxoI/en/search.json?query=%s"
+	MusixmatchSearchPageURL = "https://www.musixmatch.com/search?query=%s"
 	MusixmatchFetchPageURL  = "https://www.musixmatch.com/lyrics/%s"
 	MusixmatchDesktopAPIURL = "https://apic-desktop.musixmatch.com/ws/1.1/%s"
 )

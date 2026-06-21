@@ -47,7 +47,7 @@ type nextDataResponse struct {
 	} `json:"props"`
 }
 
-func fetchLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error) {
+func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error) {
 	endpoint := fmt.Sprintf(utils.MusixmatchFetchPageURL, track.CommontrackVanityID)
 
 	utils.LogInfof("fetching lyrics page: %s", endpoint)

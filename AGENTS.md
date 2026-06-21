@@ -27,16 +27,16 @@ Treat this file as the first source of project context. Search the codebase only
 6. Desktop API lyrics are returned in this order: richsync converted to LRC, subtitle LRC, then plain lyrics.
 7. If the desktop API fails or returns no lyrics, `FetchLyrics` falls back to website scraping.
 8. `searchForTrack` normalizes artist/title, builds a Musixmatch search query, calls `utils.DoGetRequest`, unmarshals search JSON, then chooses `bestMatch` when it is a `track`, otherwise `tracks[0]`.
-9. `fetchLyricsForTrack` fetches the Musixmatch lyrics page for the selected `commontrack_vanity_id`, extracts `<script id="__NEXT_DATA__">`, and unmarshals the JSON payload.
+9. `scrapeWebsiteLyricsForTrack` fetches the Musixmatch lyrics page for the selected `commontrack_vanity_id`, extracts `<script id="__NEXT_DATA__">`, and unmarshals the JSON payload.
 10. Website fallback lyrics are returned in this order: synced LRC from `trackStructureList`, synced LRC from `subtitle`, then plain `lyrics.body`.
 
 ## Key Files
 
-- `plugin/musixmatch/desktop.go` implements the unofficial desktop API path at `apic-desktop.musixmatch.com/ws/1.1`, including 10-minute token caching and `macro.subtitles.get` parsing.
-- `plugin/musixmatch/search.go` uses `MusixmatchSearchPageURL` and parses `pageProps.data.openSearch.data.opensearchTrackSearch.body`.
-- `plugin/musixmatch/fetch.go` uses `nextDataRe` to parse the Musixmatch page and reads `props.pageProps.data.trackInfo.data`.
-- `plugin/musixmatch/fetch__lyrics-parser.go` converts Musixmatch timestamp totals into LRC tags like `[mm:ss.hh]`.
-- `plugin/musixmatch/utils.go` normalizes input by lowercasing, stripping diacritics, removing bracketed text, removing common dash suffixes, and collapsing whitespace.
+- `plugin/musixmatch/1_desktop.go` implements the unofficial desktop API path at `apic-desktop.musixmatch.com/ws/1.1`, including 10-minute token caching and `macro.subtitles.get` parsing.
+- `plugin/musixmatch/2_search.go` uses `MusixmatchSearchPageURL` and parses `pageProps.data.openSearch.data.opensearchTrackSearch.body`.
+- `plugin/musixmatch/3_website_scraper.go` uses `nextDataRe` to parse the Musixmatch page and reads `props.pageProps.data.trackInfo.data`.
+- `plugin/musixmatch/4_website_scraper__lyrics_parser.go` converts Musixmatch timestamp totals into LRC tags like `[mm:ss.hh]`.
+- `plugin/musixmatch/9_utils.go` normalizes input by lowercasing, stripping diacritics, removing bracketed text, removing common dash suffixes, and collapsing whitespace.
 - `plugin/utils/http.go` sends GET requests with PDK HTTP, `Accept-Language: en`, configured `Accept`, configured `User-Agent`, and optional Musixmatch cookies.
 - `plugin/utils/constants.go` contains the hardcoded Musixmatch URLs and default headers.
 
@@ -59,7 +59,7 @@ Run commands from the repository root unless a command states otherwise.
 
 - Enter the Nix dev shell when available: `nix develop`.
 - Run tests: `go test ./...` from `plugin/`, or `just test` from the repo root.
-- Run live Musixmatch desktop API e2e tests from `plugin/`: `go test -tags=e2e ./musixmatch -run TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd -count=1 -v`. These use the `e2e` build tag and make real network requests.
+- Run tests: `go test ./...` from `plugin/`, or `just test` from the repo root. The Musixmatch desktop API end-to-end test makes real network requests.
 - Format Go code: `just lint-plugin`.
 - Full lint wrapper: `just lint` runs `just lint-plugin` and `treefmt .`.
 - Dev WASM build: `just build-dev`.
@@ -77,7 +77,7 @@ Validated during repository onboarding: `go test ./...` passes from `plugin/`, b
 - `MusixmatchDesktopAPIURL` uses the unofficial desktop endpoint with `app_id=web-desktop-app-v1.0`; if free lookups start failing, check this endpoint and token flow first.
 - `MusixmatchSearchPageURL` includes a hardcoded Next.js build ID: `wJzHKhbhsIOkKhgBolxoI`. If search starts returning 404 or non-JSON, check this first.
 - Search result selection is permissive and does not verify returned artist/title equality after normalization.
-- `slugify` in `plugin/musixmatch/utils.go` appears unused.
+- `slugify` in `plugin/musixmatch/9_utils.go` appears unused.
 - The plugin returns an empty successful lyrics response when search has no results, but returns errors for fetch/parse failures.
 - HTTP requests require Navidrome plugin HTTP permission from `manifest.json`; do not replace PDK HTTP with standard `net/http` unless Navidrome WASM support is confirmed.
 

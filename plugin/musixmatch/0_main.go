@@ -19,7 +19,11 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 		utils.LogErrorf("FetchLyrics desktop API fallback: %v", err)
 	}
 
-	// Fallback, scrape website
+	// Fallback, scrape website when a user token is configured.
+	if utils.ConfigUserToken() == "" {
+		utils.LogInfof("FetchLyrics: skipping website fallback because musixmatch_user_token is not configured")
+		return lyrics.GetLyricsResponse{}, nil
+	}
 
 	track, err := searchForTrack(input)
 	if err != nil {
@@ -32,5 +36,5 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 	}
 
 	utils.LogInfof("FetchLyrics: matched '%s' by '%s'", track.Title, track.Artist)
-	return fetchLyricsForTrack(track)
+	return scrapeWebsiteLyricsForTrack(track)
 }

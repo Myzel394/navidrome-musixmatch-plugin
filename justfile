@@ -20,3 +20,5 @@ default:
 lint:
     @just lint-plugin
     treefmt .
+
+

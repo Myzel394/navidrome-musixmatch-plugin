@@ -19,6 +19,8 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 		utils.LogErrorf("FetchLyrics desktop API fallback: %v", err)
 	}
 
+	// Fallback, scrape website
+
 	track, err := searchForTrack(input)
 	if err != nil {
 		utils.LogErrorf("FetchLyrics search error: %v", err)

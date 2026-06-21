@@ -12,6 +12,7 @@ import '.just/dev.just'
 import '.just/prod.just'
 import '.just/test.just'
 import '.just/cicd.just'
+import '.just/release.just'
 
 # ── Default ────────────────────────────────────────
 default:
@@ -20,5 +21,3 @@ default:
 lint:
     @just lint-plugin
     treefmt .
-
-

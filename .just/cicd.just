@@ -3,3 +3,4 @@
 [group("ci-cd")]
 update-pinact:
     pinact run
+

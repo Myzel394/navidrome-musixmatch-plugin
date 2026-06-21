@@ -17,7 +17,6 @@ ready:
     nix build .#default --no-link
 
     # Check if versions are ok
-    package_version=$(jq -r '.version' package.json)
     manifest_version=$(jq -r '.version' plugin/manifest.json)
     flake_version=$(perl -ne 'print "$1\n" if /version = "([^"]+)";/' flake.nix | head -n 1)
 
@@ -27,9 +26,8 @@ ready:
     fi
 
     # All version files must agree before a release tag is created.
-    if [[ "$package_version" != "$manifest_version" || "$package_version" != "$flake_version" ]]; then
+    if [[ "$manifest_version" != "$flake_version" ]]; then
         echo "Version mismatch:" >&2
-        echo "  package.json: $package_version" >&2
         echo "  plugin/manifest.json: $manifest_version" >&2
         echo "  flake.nix: $flake_version" >&2
         exit 1
@@ -73,11 +71,11 @@ ready:
         (( current_patch > latest_patch ))
     }
 
-    if ! semver_gt "$package_version" "$latest_version"; then
+    if ! semver_gt "$manifest_version" "$latest_version"; then
         echo "Version must be greater than latest GitHub release:" >&2
-        echo "  current: $package_version" >&2
+        echo "  current: $manifest_version" >&2
         echo "  latest:  $latest_tag" >&2
         exit 1
     fi
 
-    echo "Ready: $package_version > $latest_tag"
+    echo "Ready: $manifest_version > $latest_tag"

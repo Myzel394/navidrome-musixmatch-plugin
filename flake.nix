@@ -15,7 +15,7 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        version = "0.1.0";
+        version = "0.2.1";
         pkgs = import nixpkgs { inherit system; };
         plugin = pkgs.buildGo125Module {
           pname = "navidrome-musixmatch-plugin";

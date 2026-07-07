@@ -14,44 +14,54 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error) {
+func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure) {
 	utils.LogInfof("desktop API: fetching lyrics for '%s' by '%s'", input.Track.Title, input.Track.Artist)
 
-	token, err := desktopUserToken()
+	token, err, failure := desktopUserToken()
 	if err != nil {
-		return lyrics.GetLyricsResponse{}, err
+		return lyrics.GetLyricsResponse{}, err, failure
 	}
 
 	query := desktopLyricsQuery(input, token)
 
 	var resp desktopResponse
-	if err := desktopGet("macro.subtitles.get", query, &resp); err != nil {
-		return lyrics.GetLyricsResponse{}, err
+	endpoint, err := desktopGet("macro.subtitles.get", query, &resp)
+	if err != nil {
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopRequest, "macro_request_failed", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+		return lyrics.GetLyricsResponse{}, err, failure
 	}
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
 		_ = host.CacheRemove(desktopTokenCache)
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("desktop API returned 401 for lyrics request")
+		err := fmt.Errorf("desktop API returned 401 for lyrics request")
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopBlocked, "macro_blocked", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint).WithStatusCode(resp.Message.Header.StatusCode)
+		return lyrics.GetLyricsResponse{}, err, failure
 	}
 	if resp.Message.Header.StatusCode != desktopAPISuccess {
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("desktop API returned status %d for lyrics request", resp.Message.Header.StatusCode)
+		err := fmt.Errorf("desktop API returned status %d for lyrics request", resp.Message.Header.StatusCode)
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopRequest, "macro_status", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint).WithStatusCode(resp.Message.Header.StatusCode)
+		return lyrics.GetLyricsResponse{}, err, failure
 	}
 
 	var body desktopMacroBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("failed to parse desktop API macro body: %w", err)
+		err = fmt.Errorf("failed to parse desktop API macro body: %w", err)
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopRequest, "macro_parse", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+		return lyrics.GetLyricsResponse{}, err, failure
 	}
 
 	if resp, ok := desktopLyricsFromRichsync(body.MacroCalls["track.richsync.get"]); ok {
-		return resp, nil
+		return resp, nil, nil
 	}
 	if resp, ok := desktopLyricsFromSubtitle(body.MacroCalls["track.subtitles.get"]); ok {
-		return resp, nil
+		return resp, nil, nil
 	}
 	if resp, ok := desktopLyricsFromPlain(body.MacroCalls["track.lyrics.get"]); ok {
-		return resp, nil
+		return resp, nil, nil
 	}
 
-	return lyrics.GetLyricsResponse{}, fmt.Errorf(desktopFallbackErr)
+	err = fmt.Errorf(desktopFallbackErr)
+	failure = utils.NewLookupFailure(utils.LookupFailureStageDesktopNoLyrics, "no_desktop_lyrics", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+	return lyrics.GetLyricsResponse{}, err, failure
 }
 
 func desktopLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values {
@@ -70,55 +80,65 @@ func desktopLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values 
 	return query
 }
 
-func desktopUserToken() (string, error) {
+func desktopUserToken() (string, error, *utils.LookupFailure) {
 	if token, ok, err := host.CacheGetString(desktopTokenCache); err != nil {
 		utils.LogErrorf("desktop API token cache read failed: %v", err)
 	} else if ok && token != "" {
-		return token, nil
+		return token, nil, nil
 	}
 
 	query := url.Values{}
 	query.Set("user_language", "en")
 
 	var resp desktopResponse
-	if err := desktopGet("token.get", query, &resp); err != nil {
-		return "", err
+	endpoint, err := desktopGet("token.get", query, &resp)
+	if err != nil {
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopToken, "token_request_failed", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+		return "", err, failure
 	}
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
-		return "", fmt.Errorf("desktop API returned 401 while fetching token")
+		err := fmt.Errorf("desktop API returned 401 while fetching token")
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopBlocked, "token_blocked", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint).WithStatusCode(resp.Message.Header.StatusCode)
+		return "", err, failure
 	}
 	if resp.Message.Header.StatusCode != desktopAPISuccess {
-		return "", fmt.Errorf("desktop API returned status %d while fetching token", resp.Message.Header.StatusCode)
+		err := fmt.Errorf("desktop API returned status %d while fetching token", resp.Message.Header.StatusCode)
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopToken, "token_status", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint).WithStatusCode(resp.Message.Header.StatusCode)
+		return "", err, failure
 	}
 
 	var body desktopTokenBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
-		return "", fmt.Errorf("failed to parse desktop API token body: %w", err)
+		err = fmt.Errorf("failed to parse desktop API token body: %w", err)
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopToken, "token_parse", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+		return "", err, failure
 	}
 	if body.UserToken == "" {
-		return "", fmt.Errorf("desktop API returned empty token")
+		err := fmt.Errorf("desktop API returned empty token")
+		failure := utils.NewLookupFailure(utils.LookupFailureStageDesktopToken, "token_empty", utils.LookupSourceDesktopAPI, err).WithEndpoint(endpoint)
+		return "", err, failure
 	}
 
 	if err := host.CacheSetString(desktopTokenCache, body.UserToken, int64(desktopTokenTTL/time.Second)); err != nil {
 		utils.LogErrorf("desktop API token cache write failed: %v", err)
 	}
 
-	return body.UserToken, nil
+	return body.UserToken, nil, nil
 }
 
-func desktopGet(action string, query url.Values, out any) error {
+func desktopGet(action string, query url.Values, out any) (string, error) {
 	query.Set("app_id", desktopAppID)
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
 
 	endpoint := fmt.Sprintf(utils.MusixmatchDesktopAPIURL, action) + "?" + query.Encode()
 	body, err := doDesktopGetRequest(endpoint)
 	if err != nil {
-		return err
+		return endpoint, err
 	}
 	if err := json.Unmarshal(body, out); err != nil {
-		return fmt.Errorf("failed to parse desktop API response for %s: %w", action, err)
+		return endpoint, fmt.Errorf("failed to parse desktop API response for %s: %w", action, err)
 	}
-	return nil
+	return endpoint, nil
 }
 
 func doDesktopGetRequest(endpoint string) ([]byte, error) {
@@ -130,7 +150,7 @@ func doDesktopGetRequest(endpoint string) ([]byte, error) {
 
 	resp := req.Send()
 	if resp.Status() != utils.HTTPStatusOK {
-		return resp.Body(), fmt.Errorf("HTTP %d from desktop API endpoint %s", resp.Status(), endpoint)
+		return resp.Body(), &utils.HTTPError{StatusCode: int(resp.Status()), Endpoint: endpoint}
 	}
 	return resp.Body(), nil
 }

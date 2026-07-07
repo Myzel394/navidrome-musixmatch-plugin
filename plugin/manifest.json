@@ -6,9 +6,10 @@
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
     "http": {
-      "reason": "To search & fetch your lyrics from MusixMatch",
+      "reason": "To search and fetch lyrics from Musixmatch, and to send opt-in analytics to the maintainer's OpenObserve instance",
       "requiredHosts": [
         "apic-desktop.musixmatch.com",
+        "bugs.myzel394.app",
         "www.musixmatch.com"
       ]
     },
@@ -44,6 +45,18 @@
           "title": "HTTP Accept Header",
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
+        },
+        "analytics_share_errors": {
+          "type": "boolean",
+          "title": "Share errors",
+          "default": false,
+          "description": "When enabled, failed song lookups are sent to my self-hosted OpenObserve instance at bugs.myzel394.app so issues can be debugged much faster. This includes the requested song artist/title and sanitized plugin logs for failed lookups only. This DOES NOT contain any personal data and no log can be tied back to you. This is solely used for debugging purposes only. The server is rented from Incognet, a privacy respecting VPS provider, full-disk encrypted, behind Cloudflare, and runs the open source OpenObserve app self-hosted. No data is ever shared with any third party. Only minimal debugging information is collected, deleted after 30 days, and accessible only by me."
+        },
+        "analytics_share_metrics": {
+          "type": "boolean",
+          "title": "Share metrics",
+          "default": false,
+          "description": "When enabled, anonymous lookup metrics are sent to my self-hosted OpenObserve instance at bugs.myzel394.app: success/failure counters, lookup duration, failure stage, and lyric source/type. Metrics do not include song artist/title, file paths, library IDs, or local Navidrome IDs. This DOES NOT contain any personal data and no log can be tied back to you. This is solely used for debugging purposes only. The server is rented from Incognet, a privacy respecting VPS provider, full-disk encrypted, behind Cloudflare, and runs the open source OpenObserve app self-hosted. No data is ever shared with any third party. Only minimal debugging information is collected, deleted after 30 days, and accessible only by me."
         }
       }
     },
@@ -53,6 +66,20 @@
         {
           "type": "Control",
           "scope": "#/properties/musixmatch_user_token"
+        },
+        {
+          "type": "Group",
+          "label": "Analytics",
+          "elements": [
+            {
+              "type": "Control",
+              "scope": "#/properties/analytics_share_errors"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/analytics_share_metrics"
+            }
+          ]
         },
         {
           "type": "Group",

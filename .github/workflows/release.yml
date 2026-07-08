@@ -23,7 +23,10 @@ jobs:
             experimental-features = nix-command flakes
 
       - name: Build plugin
-        run: nix build .#default
+        env:
+          OPENOBSERVE_AUTH_TOKEN: ${{ secrets.OPENOBSERVE_AUTH_TOKEN }}
+          OPENOBSERVE_PLUGIN_SOURCE: github
+        run: nix build --impure .#default
 
       - name: Stage artifact
         run: |

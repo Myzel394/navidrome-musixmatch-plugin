@@ -15,7 +15,7 @@ import (
 )
 
 func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	utils.LogInfof("desktop API: fetching lyrics for '%s' by '%s'", input.Track.Title, input.Track.Artist)
+	utils.LogInfof("desktop API: lookup started duration_filter=%t", input.Track.Duration > 0)
 
 	token, err, failure := desktopUserToken()
 	if err != nil {
@@ -27,9 +27,11 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	var resp desktopResponse
 	err = desktopGet("macro.subtitles.get", query, &resp)
 	if err != nil {
+		utils.LogErrorf("desktop API: lyrics request failed error=%v", err)
 		failure := utils.NewLookupFailure("desktop_macro_request_failed", "desktop_api", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
+	utils.LogInfof("desktop API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
 		_ = host.CacheRemove(desktopTokenCache)
 		err := fmt.Errorf("desktop API returned 401 for lyrics request")
@@ -44,10 +46,12 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 
 	var body desktopMacroBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
+		utils.LogErrorf("desktop API: could not parse lyrics response body_bytes=%d error=%v", len(resp.Message.Body), err)
 		err = fmt.Errorf("failed to parse desktop API macro body: %w", err)
 		failure := utils.NewLookupFailure("desktop_macro_parse", "desktop_api", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
+	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
 	if resp, ok := desktopLyricsFromRichsync(body.MacroCalls["track.richsync.get"]); ok {
 		success := utils.NewLookupSuccess("desktop_synced")
@@ -62,6 +66,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 		return resp, nil, nil, success
 	}
 
+	utils.LogInfof("desktop API: lookup finished without lyrics")
 	err = fmt.Errorf(desktopFallbackErr)
 	failure = utils.NewLookupFailure("desktop_no_lyrics", "desktop_api", err)
 	return lyrics.GetLyricsResponse{}, err, failure, nil
@@ -87,8 +92,10 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	if token, ok, err := host.CacheGetString(desktopTokenCache); err != nil {
 		utils.LogErrorf("desktop API token cache read failed: %v", err)
 	} else if ok && token != "" {
+		utils.LogInfof("desktop API: token cache hit")
 		return token, nil, nil
 	}
+	utils.LogInfof("desktop API: token cache miss")
 
 	query := url.Values{}
 	query.Set("user_language", "en")
@@ -96,9 +103,11 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	var resp desktopResponse
 	err := desktopGet("token.get", query, &resp)
 	if err != nil {
+		utils.LogErrorf("desktop API: token request failed error=%v", err)
 		failure := utils.NewLookupFailure("desktop_token_request_failed", "desktop_api", err)
 		return "", err, failure
 	}
+	utils.LogInfof("desktop API: token response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
 		err := fmt.Errorf("desktop API returned 401 while fetching token")
 		failure := utils.NewLookupFailure("desktop_token_blocked", "desktop_api", err).WithStatusCode(resp.Message.Header.StatusCode)
@@ -112,15 +121,18 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 
 	var body desktopTokenBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
+		utils.LogErrorf("desktop API: could not parse token response body_bytes=%d error=%v", len(resp.Message.Body), err)
 		err = fmt.Errorf("failed to parse desktop API token body: %w", err)
 		failure := utils.NewLookupFailure("desktop_token_parse", "desktop_api", err)
 		return "", err, failure
 	}
 	if body.UserToken == "" {
+		utils.LogInfof("desktop API: parsed token response token_present=false")
 		err := fmt.Errorf("desktop API returned empty token")
 		failure := utils.NewLookupFailure("desktop_token_empty", "desktop_api", err)
 		return "", err, failure
 	}
+	utils.LogInfof("desktop API: parsed token response token_present=true")
 
 	if err := host.CacheSetString(desktopTokenCache, body.UserToken, int64(desktopTokenTTL/time.Second)); err != nil {
 		utils.LogErrorf("desktop API token cache write failed: %v", err)
@@ -159,12 +171,22 @@ func doDesktopGetRequest(endpoint string) ([]byte, error) {
 }
 
 func desktopLyricsFromRichsync(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
+	if call.Message.Header.StatusCode != desktopAPISuccess {
+		utils.LogInfof("desktop API: richsync lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if len(call.Message.Body) == 0 {
+		utils.LogInfof("desktop API: richsync lyrics unavailable because response body was empty status=%d", call.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, false
 	}
 
 	var body desktopRichsyncBody
-	if err := json.Unmarshal(call.Message.Body, &body); err != nil || body.Richsync.Body == "" {
+	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
+		utils.LogInfof("desktop API: richsync lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if body.Richsync.Body == "" {
+		utils.LogInfof("desktop API: richsync lyrics unavailable because lyrics body was empty")
 		return lyrics.GetLyricsResponse{}, false
 	}
 
@@ -184,6 +206,7 @@ func desktopLyricsFromRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 		b.WriteByte('\n')
 	}
 	if b.Len() == 0 {
+		utils.LogInfof("desktop API: richsync lyrics unavailable because no LRC lines were rendered parsed_lines=%d", len(lines))
 		return lyrics.GetLyricsResponse{}, false
 	}
 
@@ -192,17 +215,28 @@ func desktopLyricsFromRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 }
 
 func desktopLyricsFromSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
+	if call.Message.Header.StatusCode != desktopAPISuccess {
+		utils.LogInfof("desktop API: subtitle lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if len(call.Message.Body) == 0 {
+		utils.LogInfof("desktop API: subtitle lyrics unavailable because response body was empty status=%d", call.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, false
 	}
 
 	var body desktopSubtitleBody
-	if err := json.Unmarshal(call.Message.Body, &body); err != nil || len(body.SubtitleList) == 0 {
+	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
+		utils.LogInfof("desktop API: subtitle lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if len(body.SubtitleList) == 0 {
+		utils.LogInfof("desktop API: subtitle lyrics unavailable because subtitle list was empty")
 		return lyrics.GetLyricsResponse{}, false
 	}
 
 	subtitle := body.SubtitleList[0].Subtitle
 	if subtitle.Body == "" {
+		utils.LogInfof("desktop API: subtitle lyrics unavailable because lyrics body was empty list_count=%d", len(body.SubtitleList))
 		return lyrics.GetLyricsResponse{}, false
 	}
 
@@ -211,12 +245,22 @@ func desktopLyricsFromSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, 
 }
 
 func desktopLyricsFromPlain(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
+	if call.Message.Header.StatusCode != desktopAPISuccess {
+		utils.LogInfof("desktop API: plain lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if len(call.Message.Body) == 0 {
+		utils.LogInfof("desktop API: plain lyrics unavailable because response body was empty status=%d", call.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, false
 	}
 
 	var body desktopLyricsBody
-	if err := json.Unmarshal(call.Message.Body, &body); err != nil || body.Lyrics.Body == "" {
+	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
+		utils.LogInfof("desktop API: plain lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		return lyrics.GetLyricsResponse{}, false
+	}
+	if body.Lyrics.Body == "" {
+		utils.LogInfof("desktop API: plain lyrics unavailable because lyrics body was empty")
 		return lyrics.GetLyricsResponse{}, false
 	}
 

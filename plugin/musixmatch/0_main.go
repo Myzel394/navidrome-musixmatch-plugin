@@ -14,11 +14,16 @@ type Song struct {
 }
 
 func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	utils.LogInfof("FetchLyrics: artist='%s' title='%s'", input.Track.Artist, input.Track.Title)
-	if resp, err, _, success := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
+	utils.LogInfof("FetchLyrics: lookup started for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
+	if resp, err, desktopFailure, success := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
+		utils.LogInfof("FetchLyrics: lookup succeeded source=desktop_api category=%s", success.CategoryValue())
 		return resp, nil, nil, success
 	} else if err != nil {
-		utils.LogErrorf("FetchLyrics desktop API fallback: %v", err)
+		status := 0
+		if desktopFailure != nil {
+			status = desktopFailure.StatusCode
+		}
+		utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", desktopFailure.ReasonValue(), status, err)
 	}
 
 	// Fallback, scrape website when a user token is configured.
@@ -31,16 +36,20 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 
 	track, err, failure := searchForTrack(input)
 	if err != nil {
-		utils.LogErrorf("FetchLyrics search error: %v", err)
+		status := 0
+		if failure != nil {
+			status = failure.StatusCode
+		}
+		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", failure.ReasonValue(), status, err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	if track == nil {
-		utils.LogInfof("FetchLyrics: no match found for '%s' - '%s'", input.Track.Artist, input.Track.Title)
-		err := fmt.Errorf("no Musixmatch match found for %q by %q", input.Track.Title, input.Track.Artist)
+		utils.LogInfof("FetchLyrics: website search no_match_found")
+		err := fmt.Errorf("no Musixmatch match found")
 		failure := utils.NewLookupFailure("search_no_match", "website", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
-	utils.LogInfof("FetchLyrics: matched '%s' by '%s'", track.Title, track.Artist)
+	utils.LogInfof("FetchLyrics: website search match_found")
 	return scrapeWebsiteLyricsForTrack(track)
 }

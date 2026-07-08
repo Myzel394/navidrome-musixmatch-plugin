@@ -17,6 +17,13 @@
       let
         version = "0.2.1";
         pkgs = import nixpkgs { inherit system; };
+        openObserveAuthToken = builtins.getEnv "OPENOBSERVE_AUTH_TOKEN";
+        openObservePluginSource = "github";
+        openObserveLDFlags = pkgs.lib.escapeShellArg (
+          "-X github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils.OpenObserveAuthToken=${openObserveAuthToken} "
+          + "-X github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils.OpenObserveAttributePluginSource=${openObservePluginSource} "
+          + "-X github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils.OpenObserveAttributeVersion=${version}"
+        );
         plugin = pkgs.buildGo125Module {
           pname = "navidrome-musixmatch-plugin";
           version = version;
@@ -31,6 +38,7 @@
             export HOME=$(mktemp -d)
 
             tinygo build \
+                -ldflags ${openObserveLDFlags} \
                 -target=wasip1 \
                 -buildmode=c-shared \
                 -opt=z \

@@ -6,6 +6,8 @@ plugins_dir := data_dir / "plugins"
 username := "admin"
 password := "password"
 
+set dotenv-load := true
+
 # ── Imports ────────────────────────────────────────
 import '.just/plugin.just'
 import '.just/dev.just'

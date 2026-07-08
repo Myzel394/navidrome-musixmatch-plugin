@@ -11,5 +11,5 @@ install:
 # Build & Install a full & ready prod build
 [group('prod')]
 full-prod-install:
-    nix build .#default
+    nix build --impure .#default
     cp result/bin/*.ndp {{plugins_dir}}/

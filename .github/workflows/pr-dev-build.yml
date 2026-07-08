@@ -1,0 +1,39 @@
+name: PR Dev Build
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build dev plugin
+        run: nix develop -c just build-dev
+
+      - name: Pack dev plugin
+        run: nix develop -c just pack
+
+      - name: Stage artifact
+        run: |
+          mkdir -p dist
+          cp plugin/navidrome-musixmatch-plugin.ndp dist/navidrome-musixmatch-plugin-dev.ndp
+          sha256sum dist/navidrome-musixmatch-plugin-dev.ndp | tee dist/navidrome-musixmatch-plugin-dev.ndp.sha256
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: navidrome-musixmatch-plugin-dev-pr-${{ github.event.pull_request.number }}
+          path: |
+            dist/navidrome-musixmatch-plugin-dev.ndp
+            dist/navidrome-musixmatch-plugin-dev.ndp.sha256

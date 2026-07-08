@@ -20,7 +20,7 @@ import (
 func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 	mockDesktopAPI(t)
 
-	resp, err, failure := FetchLyrics(lyrics.GetLyricsRequest{
+	resp, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{
 			Artist:   "Billie Eilish",
 			Title:    "Birds of a Feather",
@@ -32,6 +32,9 @@ func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 	}
 	if failure != nil {
 		t.Fatalf("FetchLyrics returned failure: %v", failure)
+	}
+	if success == nil {
+		t.Fatal("expected success metadata")
 	}
 	if len(resp.Lyrics) == 0 {
 		t.Fatal("expected at least one lyrics result")

@@ -13,7 +13,7 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 	utils.StartLogCapture()
 
 	startedAt := time.Now().UTC()
-	resp, err, failure := musixmatch.FetchLyrics(input)
+	resp, err, failure, success := musixmatch.FetchLyrics(input)
 	duration := time.Since(startedAt)
 
 	if err != nil {
@@ -23,7 +23,7 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 	}
 
 	logs := utils.StopLogCapture()
-	utils.ReportLyricsLookup(input, resp, err, failure, startedAt, duration, logs)
+	utils.ReportLyricsLookup(input, resp, err, failure, success, startedAt, duration, logs)
 
 	if err != nil {
 		return resp, fmt.Errorf("%s%w", utils.LogPrefix, err)

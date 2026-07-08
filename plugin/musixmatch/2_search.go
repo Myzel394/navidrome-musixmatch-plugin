@@ -40,7 +40,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 	query := fmt.Sprintf("%s %s", normArtist, normTitle)
 	endpoint := fmt.Sprintf(utils.MusixmatchSearchPageURL, url.QueryEscape(query))
 
-	utils.LogInfof("searching for '%s' -> %s", query, endpoint)
+	utils.LogInfof("searching for '%s'", query)
 
 	body, err := utils.DoGetRequest(endpoint)
 	if err != nil || body == nil {
@@ -49,14 +49,14 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 		}
 		utils.LogErrorf("search request failed for '%s': %v", query, err)
 		err = fmt.Errorf("failed to do musixmatch search request for query %s: %w", query, err)
-		failure := utils.NewLookupFailure(utils.LookupFailureStageSearchRequest, "http_request_failed", utils.LookupSourceWebsite, err).WithEndpoint(endpoint)
+		failure := utils.NewLookupFailure("search_request_failed", "website", err)
 		return nil, err, failure
 	}
 
 	matches := nextDataRe.FindSubmatch(body)
 	if len(matches) < 2 {
 		err := fmt.Errorf("failed to find musixmatch search Next.js data for query %s", query)
-		failure := utils.NewLookupFailure(utils.LookupFailureStageSearchParse, "next_data_missing", utils.LookupSourceWebsite, err).WithEndpoint(endpoint)
+		failure := utils.NewLookupFailure("search_next_data_missing", "website", err)
 		return nil, err, failure
 	}
 
@@ -64,7 +64,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 	if err := json.Unmarshal(matches[1], &resp); err != nil {
 		utils.LogErrorf("search parse failed for '%s': %v", query, err)
 		err = fmt.Errorf("failed to parse musixmatch search response for query %s: %w", query, err)
-		failure := utils.NewLookupFailure(utils.LookupFailureStageSearchParse, "json_parse_failed", utils.LookupSourceWebsite, err).WithEndpoint(endpoint)
+		failure := utils.NewLookupFailure("search_json_parse_failed", "website", err)
 		return nil, err, failure
 	}
 
@@ -82,6 +82,6 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 
 	utils.LogInfof("search returned no results for '%s'", query)
 	err = fmt.Errorf("no Musixmatch search results for query %s", query)
-	failure := utils.NewLookupFailure(utils.LookupFailureStageSearchNoMatch, "no_search_results", utils.LookupSourceWebsite, err).WithEndpoint(endpoint)
+	failure := utils.NewLookupFailure("search_no_match", "website", err)
 	return nil, err, failure
 }

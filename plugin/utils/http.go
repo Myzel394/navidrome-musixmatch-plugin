@@ -33,8 +33,8 @@ func DoGetRequest(endpoint string) ([]byte, error) {
 
 	resp := req.Send()
 	if resp.Status() != HTTPStatusOK {
-		LogErrorf("HTTP %d from %s", resp.Status(), endpoint)
-		return resp.Body(), &HTTPError{StatusCode: int(resp.Status()), Endpoint: endpoint}
+		LogErrorf("HTTP %d from Musixmatch", resp.Status())
+		return resp.Body(), &HTTPError{StatusCode: int(resp.Status())}
 	}
 	return resp.Body(), nil
 }

@@ -45,9 +45,9 @@ func ConfigCaptchaID() string {
 }
 
 func ConfigShareErrors() bool {
-	return getConfigBool(ConfigKeyShareErrors, false)
+	return getConfigBool(ConfigKeyShareErrors, true)
 }
 
 func ConfigShareMetrics() bool {
-	return getConfigBool(ConfigKeyShareMetrics, false)
+	return getConfigBool(ConfigKeyShareMetrics, true)
 }

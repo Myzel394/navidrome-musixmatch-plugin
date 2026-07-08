@@ -2,8 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"regexp"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,7 +18,6 @@ var (
 	logCaptureMu      sync.Mutex
 	logCaptureActive  bool
 	logCaptureEntries []CapturedLog
-	sensitiveLogRe    = regexp.MustCompile(`(?i)(usertoken|musixmatchUserToken|captcha_id|authorization)=([^&\s;]+)`)
 )
 
 func LogInfof(format string, args ...any) {
@@ -66,13 +63,6 @@ func captureLog(level, msg string) {
 	logCaptureEntries = append(logCaptureEntries, CapturedLog{
 		Timestamp: time.Now().UTC().Format(time.RFC3339Nano),
 		Level:     level,
-		Message:   SanitizeAnalyticsText(msg),
-	})
-}
-
-func SanitizeAnalyticsText(s string) string {
-	return sensitiveLogRe.ReplaceAllStringFunc(s, func(match string) string {
-		parts := strings.SplitN(match, "=", 2)
-		return parts[0] + "=<redacted>"
+		Message:   msg,
 	})
 }

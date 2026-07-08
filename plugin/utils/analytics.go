@@ -27,6 +27,7 @@ type lookupAnalytics struct {
 	Response  lyrics.GetLyricsResponse
 	Err       error
 	Failure   *LookupFailure
+	Success   *LookupSuccess
 	StartedAt time.Time
 	Duration  time.Duration
 	Logs      []CapturedLog
@@ -92,7 +93,7 @@ type otlpValue struct {
 	BoolValue   *bool    `json:"boolValue,omitempty"`
 }
 
-func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResponse, err error, failure *LookupFailure, startedAt time.Time, duration time.Duration, logs []CapturedLog) {
+func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResponse, err error, failure *LookupFailure, success *LookupSuccess, startedAt time.Time, duration time.Duration, logs []CapturedLog) {
 	if strings.TrimSpace(OpenObserveAuthToken) == "" {
 		return
 	}
@@ -102,6 +103,7 @@ func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResp
 		Response:  resp,
 		Err:       err,
 		Failure:   failure,
+		Success:   success,
 		StartedAt: startedAt,
 		Duration:  duration,
 		Logs:      logs,
@@ -141,12 +143,9 @@ func reportLookupMetrics(lookup lookupAnalytics) {
 	}
 
 	if lookup.success() {
-		source, lyricsType := classifyLookupSuccess(lookup.Logs)
-		base["source"] = source
-		base["lyrics_type"] = lyricsType
+		base["source"] = classifyLookupSuccess(lookup.Success)
 	} else {
 		failure := lookup.lookupFailure()
-		base["failure_stage"] = classifyLookupFailure(failure)
 		base["failure_reason"] = failure.ReasonValue()
 		base["failure_source"] = failure.SourceValue()
 	}
@@ -178,14 +177,13 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 	end := lookup.StartedAt.Add(lookup.Duration)
 	traceID, spanID := traceIDs(lookup)
 	failure := lookup.lookupFailure()
-	failureStage := classifyLookupFailure(failure)
 	failureMessage := "lyrics lookup returned no lyrics"
 	if lookup.Err != nil {
 		failureMessage = lookup.Err.Error()
 	} else if failure != nil {
 		failureMessage = failure.Error()
 	}
-	failureMessage = truncateAnalyticsText(SanitizeAnalyticsText(failureMessage))
+	failureMessage = truncateAnalyticsText(failureMessage)
 
 	span := otlpSpan{
 		TraceID:           traceID,
@@ -196,7 +194,6 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 		EndTimeUnixNano:   unixNanoString(end),
 		Attributes: []otlpAttribute{
 			otlpStringAttr("lookup.result", "failure"),
-			otlpStringAttr("lookup.failure_stage", failureStage),
 			otlpStringAttr("lookup.failure_reason", failure.ReasonValue()),
 			otlpStringAttr("lookup.source", failure.SourceValue()),
 			otlpDoubleAttr("lookup.duration_ms", float64(lookup.Duration.Milliseconds())),
@@ -277,35 +274,11 @@ func sendOpenObserveJSON(endpoint string, payload any) {
 
 func openObserveAuthorizationHeader() string {
 	token := strings.TrimSpace(OpenObserveAuthToken)
-	if strings.HasPrefix(strings.ToLower(token), "basic ") {
-		return token
-	}
 	return "Basic " + token
 }
 
-func classifyLookupSuccess(logs []CapturedLog) (string, string) {
-	for _, log := range logs {
-		msg := log.Message
-		switch {
-		case strings.Contains(msg, "desktop API: got richsync"):
-			return "desktop_api", "richsync"
-		case strings.Contains(msg, "desktop API: got subtitle"):
-			return "desktop_api", "subtitle"
-		case strings.Contains(msg, "desktop API: got plain"):
-			return "desktop_api", "plain"
-		case strings.Contains(msg, "via trackStructureList"):
-			return "website", "track_structure"
-		case strings.Contains(msg, "via subtitle"):
-			return "website", "subtitle"
-		case strings.Contains(msg, "got plain lyrics for"):
-			return "website", "plain"
-		}
-	}
-	return "unknown", "unknown"
-}
-
-func classifyLookupFailure(failure *LookupFailure) string {
-	return failure.StageValue()
+func classifyLookupSuccess(success *LookupSuccess) string {
+	return success.CategoryValue()
 }
 
 func traceIDs(lookup lookupAnalytics) (string, string) {
@@ -319,7 +292,7 @@ func unixNanoString(t time.Time) string {
 }
 
 func otlpStringAttr(key, value string) otlpAttribute {
-	return otlpAttribute{Key: key, Value: otlpValue{StringValue: truncateAnalyticsText(SanitizeAnalyticsText(value))}}
+	return otlpAttribute{Key: key, Value: otlpValue{StringValue: truncateAnalyticsText(value)}}
 }
 
 func otlpDoubleAttr(key string, value float64) otlpAttribute {

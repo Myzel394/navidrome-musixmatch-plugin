@@ -46,17 +46,23 @@
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
         },
+        "analytics_info": {
+          "type": "string",
+          "title": "Analytics info",
+          "default": "",
+          "description": "Analytics is used only to debug plugin issues. Failed lookups may send the requested artist/title and sanitized plugin logs. Anonymous metrics may send success/failure counters, lookup duration, failure reason, and lyric source/type, but not song artist/title, file paths, library IDs, or local Navidrome IDs. Data is sent to my self-hosted OpenObserve instance, not shared with third parties, deleted after 30 days, and accessible only by me."
+        },
         "analytics_share_errors": {
           "type": "boolean",
           "title": "Share errors",
-          "default": false,
-          "description": "When enabled, failed song lookups are sent to my self-hosted OpenObserve instance at bugs.myzel394.app so issues can be debugged much faster. This includes the requested song artist/title and sanitized plugin logs for failed lookups only. This DOES NOT contain any personal data and no log can be tied back to you. This is solely used for debugging purposes only. The server is rented from Incognet, a privacy respecting VPS provider, full-disk encrypted, behind Cloudflare, and runs the open source OpenObserve app self-hosted. No data is ever shared with any third party. Only minimal debugging information is collected, deleted after 30 days, and accessible only by me."
+          "default": true,
+          "description": "When enabled, failed song lookups are sent to my self-hosted OpenObserve instance at bugs.myzel394.app so issues can be debugged faster. This includes the requested song artist/title and sanitized plugin logs for failed lookups only. It is intended to avoid personal data and user-identifying logs. The data is used only for debugging, not shared with third parties, deleted after 30 days, and accessible only by me."
         },
         "analytics_share_metrics": {
           "type": "boolean",
           "title": "Share metrics",
-          "default": false,
-          "description": "When enabled, anonymous lookup metrics are sent to my self-hosted OpenObserve instance at bugs.myzel394.app: success/failure counters, lookup duration, failure stage, and lyric source/type. Metrics do not include song artist/title, file paths, library IDs, or local Navidrome IDs. This DOES NOT contain any personal data and no log can be tied back to you. This is solely used for debugging purposes only. The server is rented from Incognet, a privacy respecting VPS provider, full-disk encrypted, behind Cloudflare, and runs the open source OpenObserve app self-hosted. No data is ever shared with any third party. Only minimal debugging information is collected, deleted after 30 days, and accessible only by me."
+          "default": true,
+          "description": "When enabled, anonymous lookup metrics are sent to my self-hosted OpenObserve instance at bugs.myzel394.app: success/failure counters, lookup duration, failure reason, and lyric source/type. Metrics do not include song artist/title, file paths, library IDs, or local Navidrome IDs. The data is used only for debugging, not shared with third parties, deleted after 30 days, and accessible only by me."
         }
       }
     },
@@ -73,11 +79,31 @@
           "elements": [
             {
               "type": "Control",
-              "scope": "#/properties/analytics_share_errors"
+              "scope": "#/properties/analytics_info",
+              "rule": {
+                "effect": "DISABLE",
+                "condition": {
+                  "scope": "#",
+                  "schema": {}
+                }
+              },
+              "options": {
+                "showUnfocusedDescription": true
+              }
             },
             {
               "type": "Control",
-              "scope": "#/properties/analytics_share_metrics"
+              "scope": "#/properties/analytics_share_errors",
+              "options": {
+                "showUnfocusedDescription": true
+              }
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/analytics_share_metrics",
+              "options": {
+                "showUnfocusedDescription": true
+              }
             }
           ]
         },

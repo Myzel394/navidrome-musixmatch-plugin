@@ -5,47 +5,27 @@ import (
 	"fmt"
 )
 
-const (
-	LookupSourceDesktopAPI = "desktop_api"
-	LookupSourceWebsite    = "website"
-	LookupSourceUnknown    = "unknown"
-
-	LookupFailureStageDesktopToken            = "desktop_token"
-	LookupFailureStageDesktopRequest          = "desktop_request"
-	LookupFailureStageDesktopBlocked          = "desktop_blocked"
-	LookupFailureStageDesktopNoLyrics         = "desktop_no_lyrics"
-	LookupFailureStageWebsiteFallbackDisabled = "website_fallback_disabled"
-	LookupFailureStageSearchRequest           = "search_request"
-	LookupFailureStageSearchParse             = "search_parse"
-	LookupFailureStageSearchNoMatch           = "search_no_match"
-	LookupFailureStageLyricsPageRequest       = "lyrics_page_request"
-	LookupFailureStageLyricsPageParse         = "lyrics_page_parse"
-	LookupFailureStageLyricsEmpty             = "lyrics_empty"
-	LookupFailureStageUnknown                 = "unknown"
-	LookupFailureReasonUnknown                = "unknown"
-)
-
 type LookupFailure struct {
-	Stage      string
 	Reason     string
 	Source     string
-	Endpoint   string
 	StatusCode int
 	Err        error
 }
 
+type LookupSuccess struct {
+	Category string
+}
+
 type HTTPError struct {
 	StatusCode int
-	Endpoint   string
 }
 
 func (e *HTTPError) Error() string {
-	return fmt.Sprintf("HTTP %d from %s", e.StatusCode, SanitizeAnalyticsText(e.Endpoint))
+	return fmt.Sprintf("HTTP %d", e.StatusCode)
 }
 
-func NewLookupFailure(stage, reason, source string, err error) *LookupFailure {
+func NewLookupFailure(reason, source string, err error) *LookupFailure {
 	failure := &LookupFailure{
-		Stage:  stage,
 		Reason: reason,
 		Source: source,
 		Err:    err,
@@ -53,11 +33,14 @@ func NewLookupFailure(stage, reason, source string, err error) *LookupFailure {
 
 	var httpErr *HTTPError
 	if errors.As(err, &httpErr) {
-		failure.Endpoint = SanitizeAnalyticsText(httpErr.Endpoint)
 		failure.StatusCode = httpErr.StatusCode
 	}
 
 	return failure
+}
+
+func NewLookupSuccess(category string) *LookupSuccess {
+	return &LookupSuccess{Category: category}
 }
 
 func LookupFailureFromError(err error) *LookupFailure {
@@ -78,7 +61,7 @@ func (f *LookupFailure) Error() string {
 	if f.Reason != "" {
 		return f.Reason
 	}
-	return f.StageValue()
+	return f.ReasonValue()
 }
 
 func (f *LookupFailure) Unwrap() error {
@@ -88,13 +71,6 @@ func (f *LookupFailure) Unwrap() error {
 	return f.Err
 }
 
-func (f *LookupFailure) WithEndpoint(endpoint string) *LookupFailure {
-	if f != nil {
-		f.Endpoint = SanitizeAnalyticsText(endpoint)
-	}
-	return f
-}
-
 func (f *LookupFailure) WithStatusCode(statusCode int) *LookupFailure {
 	if f != nil {
 		f.StatusCode = statusCode
@@ -102,23 +78,23 @@ func (f *LookupFailure) WithStatusCode(statusCode int) *LookupFailure {
 	return f
 }
 
-func (f *LookupFailure) StageValue() string {
-	if f == nil || f.Stage == "" {
-		return LookupFailureStageUnknown
-	}
-	return f.Stage
-}
-
 func (f *LookupFailure) ReasonValue() string {
 	if f == nil || f.Reason == "" {
-		return LookupFailureReasonUnknown
+		return "unknown"
 	}
 	return f.Reason
 }
 
 func (f *LookupFailure) SourceValue() string {
 	if f == nil || f.Source == "" {
-		return LookupSourceUnknown
+		return "unknown"
 	}
 	return f.Source
+}
+
+func (s *LookupSuccess) CategoryValue() string {
+	if s == nil || s.Category == "" {
+		return "unknown"
+	}
+	return s.Category
 }

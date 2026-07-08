@@ -28,7 +28,7 @@ const (
 
 const (
 	OpenObserveBaseURL    = "https://bugs.myzel394.app"
-	OpenObserveOrg        = "navidrome-musixmatch-plugin"
+	OpenObserveOrg        = "default"
 	OpenObserveTraceURL   = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/v1/traces"
 	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
 )

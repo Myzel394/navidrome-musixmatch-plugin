@@ -94,8 +94,9 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 				Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lrc}},
 			}, nil, nil, success
 		}
-	} else if len(trackData.Subtitle) > 0 {
-		utils.LogInfof("website lyrics page: track structure unavailable because there were no sections")
+	}
+	if len(trackData.Subtitle) > 0 {
+		utils.LogInfof("website lyrics page: trying subtitle fallback")
 		lrc := buildLRCForSubtitle(trackData.Subtitle)
 		if lrc != "" {
 			utils.LogInfof("website lyrics page: got synced lyrics source=subtitle lrc_lines=%d", strings.Count(lrc, "\n"))

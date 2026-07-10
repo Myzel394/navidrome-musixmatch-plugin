@@ -21,13 +21,13 @@ var (
 )
 
 func LogInfof(format string, args ...any) {
-	msg := fmt.Sprintf(PluginName + ": " + format, args...)
+	msg := fmt.Sprintf(PluginName+": "+format, args...)
 	pdk.Log(pdk.LogInfo, msg)
 	captureLog("info", msg)
 }
 
 func LogErrorf(format string, args ...any) {
-	msg := fmt.Sprintf(PluginName + ": " + format, args...)
+	msg := fmt.Sprintf(PluginName+": "+format, args...)
 	pdk.Log(pdk.LogError, msg)
 	captureLog("error", msg)
 }

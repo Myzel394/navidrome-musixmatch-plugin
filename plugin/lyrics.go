@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/analytics"
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/musixmatch"
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
@@ -23,10 +24,10 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 	}
 
 	logs := utils.StopLogCapture()
-	utils.ReportLyricsLookup(input, resp, err, failure, success, startedAt, duration, logs)
+	analytics.ReportLyricsLookup(input, resp, err, failure, success, startedAt, duration, logs)
 
 	if err != nil {
-		return resp, fmt.Errorf("%s%w", utils.LogPrefix, err)
+		return resp, fmt.Errorf("%s: %w", utils.PluginName, err)
 	}
 	return resp, nil
 }

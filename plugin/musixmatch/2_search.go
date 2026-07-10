@@ -44,11 +44,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 
 	body, err := utils.DoGetRequest(endpoint)
 	if err != nil || body == nil {
-		if err == nil {
-			err = fmt.Errorf("empty musixmatch search response body")
-		}
-		utils.LogErrorf("website search: request failed body_present=%t error=%v", body != nil, err)
-		err = fmt.Errorf("failed to do musixmatch search request: %w", err)
+		utils.LogErrorf("website search: search request failed body_present=%t error=%v", body != nil, err)
 		failure := utils.NewLookupFailure("search_request_failed", "website", err)
 		return nil, err, failure
 	}
@@ -56,7 +52,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 
 	matches := nextDataRe.FindSubmatch(body)
 	if len(matches) < 2 {
-		utils.LogInfof("website search: Next.js data not found body_bytes=%d", len(body))
+		utils.LogInfof("website search: failed to find musixmatch search Next.js data body_bytes=%d", len(body))
 		err := fmt.Errorf("failed to find musixmatch search Next.js data")
 		failure := utils.NewLookupFailure("search_next_data_missing", "website", err)
 		return nil, err, failure
@@ -66,7 +62,6 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 	var resp searchResponse
 	if err := json.Unmarshal(matches[1], &resp); err != nil {
 		utils.LogErrorf("website search: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
-		err = fmt.Errorf("failed to parse musixmatch search response: %w", err)
 		failure := utils.NewLookupFailure("search_json_parse_failed", "website", err)
 		return nil, err, failure
 	}

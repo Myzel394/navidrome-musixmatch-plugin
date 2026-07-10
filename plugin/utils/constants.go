@@ -1,7 +1,5 @@
 package utils
 
-const LogPrefix = "navidrome-musixmatch-plugin: "
-
 const PluginName = "navidrome-musixmatch-plugin"
 
 const HTTPStatusOK = 200

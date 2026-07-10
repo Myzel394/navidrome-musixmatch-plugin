@@ -54,11 +54,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 
 	body, err := utils.DoGetRequest(endpoint)
 	if err != nil || body == nil {
-		if err == nil {
-			err = fmt.Errorf("empty musixmatch lyrics page response body")
-		}
 		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", body != nil, err)
-		err = fmt.Errorf("failed to fetch musixmatch page: %w", err)
 		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
@@ -76,7 +72,6 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	var data nextDataResponse
 	if err := json.Unmarshal(matches[1], &data); err != nil {
 		utils.LogErrorf("website lyrics page: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
-		err = fmt.Errorf("failed to parse __NEXT_DATA__: %w", err)
 		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}

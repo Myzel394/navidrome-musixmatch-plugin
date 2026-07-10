@@ -46,8 +46,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 
 	var body desktopMacroBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
-		utils.LogErrorf("desktop API: could not parse lyrics response body_bytes=%d error=%v", len(resp.Message.Body), err)
-		err = fmt.Errorf("failed to parse desktop API macro body: %w", err)
+		utils.LogErrorf("desktop API: failed to parse desktop API macro body body_bytes=%d error=%v", len(resp.Message.Body), err)
 		failure := utils.NewLookupFailure("desktop_macro_parse", "desktop_api", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
@@ -121,8 +120,7 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 
 	var body desktopTokenBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
-		utils.LogErrorf("desktop API: could not parse token response body_bytes=%d error=%v", len(resp.Message.Body), err)
-		err = fmt.Errorf("failed to parse desktop API token body: %w", err)
+		utils.LogErrorf("desktop API: failed to parse desktop API token body body_bytes=%d error=%v", len(resp.Message.Body), err)
 		failure := utils.NewLookupFailure("desktop_token_parse", "desktop_api", err)
 		return "", err, failure
 	}
@@ -196,22 +194,23 @@ func desktopLyricsFromRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 		return lyrics.GetLyricsResponse{}, false
 	}
 
-	var b strings.Builder
+	var builder strings.Builder
 	for _, line := range lines {
 		if line.Text == "" {
+			builder.WriteByte('\n')
 			continue
 		}
-		b.WriteString(totalToLRC(line.Timestamp))
-		b.WriteString(line.Text)
-		b.WriteByte('\n')
+		builder.WriteString(totalToLRC(line.Timestamp))
+		builder.WriteString(line.Text)
+		builder.WriteByte('\n')
 	}
-	if b.Len() == 0 {
+	if builder.Len() == 0 {
 		utils.LogInfof("desktop API: richsync lyrics unavailable because no LRC lines were rendered parsed_lines=%d", len(lines))
 		return lyrics.GetLyricsResponse{}, false
 	}
 
-	utils.LogInfof("desktop API: got richsync lyrics (%d lines LRC)", strings.Count(b.String(), "\n"))
-	return lyrics.GetLyricsResponse{Lyrics: []lyrics.LyricsText{{Lang: body.Richsync.Language, Text: b.String()}}}, true
+	utils.LogInfof("desktop API: got richsync lyrics (%d lines LRC)", strings.Count(builder.String(), "\n"))
+	return lyrics.GetLyricsResponse{Lyrics: []lyrics.LyricsText{{Lang: body.Richsync.Language, Text: builder.String()}}}, true
 }
 
 func desktopLyricsFromSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, bool) {

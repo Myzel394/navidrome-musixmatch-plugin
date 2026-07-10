@@ -117,7 +117,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	}
 
 	utils.LogInfof("website lyrics page: got plain lyrics bytes=%d", len(lyricsBody))
-	success := utils.NewLookupSuccess("website plain")
+	success := utils.NewLookupSuccess("website_plain")
 	return lyrics.GetLyricsResponse{
 		Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lyricsBody}},
 	}, nil, nil, success

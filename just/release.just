@@ -10,15 +10,22 @@ check-release:
     #!/usr/bin/env bash
     set -euo pipefail
 
+    @just @check-release-version
+    # Check if builds
+    nix build .#default --no-link
+
+# Check if the version in plugin/manifest.json and flake.nix is greater than the latest release on GitHub.
+[group('release')]
+check-release-version:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
     for command in nix jq perl git curl; do
         if ! command -v "$command" >/dev/null 2>&1; then
             echo "Missing required command: $command" >&2
             exit 1
         fi
     done
-
-    # Check if builds
-    nix build .#default --no-link
 
     # Check if versions are ok
     manifest_version=$(jq -r '.version' plugin/manifest.json)

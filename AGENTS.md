@@ -59,7 +59,7 @@ Run commands from the repository root unless a command states otherwise.
 
 - Enter the Nix dev shell when available: `nix develop`.
 - Run tests: `go test ./...` from `plugin/`, or `just test` from the repo root. The Musixmatch desktop API end-to-end test makes real network requests.
-- Format Go and repository files: `just fmt`.
+- Format Go and repository files: `just format`.
 - Vet Go packages: `just lint`.
 - Dev WASM build: `just build-dev`.
 - Production WASM build: `just build-prod`.

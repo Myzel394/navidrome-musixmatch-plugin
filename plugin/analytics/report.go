@@ -41,7 +41,7 @@ func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResp
 	}
 
 	if utils.ConfigShareMetrics() {
-		reportLookupMetrics(lookup)
+		reportLookupMetrics(lookup, input)
 	}
 	if utils.ConfigShareErrors() && !lookup.success() && err != nil {
 		reportLookupFailureTrace(lookup)

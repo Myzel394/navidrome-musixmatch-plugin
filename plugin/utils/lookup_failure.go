@@ -98,3 +98,11 @@ func (s *LookupSuccess) CategoryValue() string {
 	}
 	return s.Category
 }
+
+func (f *LookupFailure) StatusCodeValue() int {
+	if f == nil || f.StatusCode == 0 {
+		return 0
+	}
+
+	return f.StatusCode
+}

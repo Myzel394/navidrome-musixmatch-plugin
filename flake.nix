@@ -15,7 +15,7 @@
     flake-utils.lib.eachDefaultSystem (
       system:
       let
-        version = "0.3.2";
+        version = "0.3.3";
         pkgs = import nixpkgs { inherit system; };
         openObserveAuthToken = builtins.getEnv "OPENOBSERVE_AUTH_TOKEN";
         openObservePluginSource = "github";

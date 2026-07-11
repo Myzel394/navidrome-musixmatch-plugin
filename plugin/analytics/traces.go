@@ -38,6 +38,7 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 			otlpBoolAttr("config.has_musixmatch_user_token", utils.ConfigUserToken() != ""),
 
 			otlpStringAttr("plugin.source", utils.OpenObserveAttributePluginSource),
+			otlpStringAttr("plugin.version", utils.OpenObserveAttributeVersion),
 			otlpStringAttr("service.version", utils.OpenObserveAttributeVersion),
 		},
 		Events: failureLogEvents(lookup.Logs),

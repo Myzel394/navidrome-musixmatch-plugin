@@ -22,14 +22,17 @@ func reportLookupMetrics(lookup lookupAnalytics) {
 
 	now := time.Now().UTC().Unix()
 	base := metricRecord{
-		"plugin":         utils.PluginName,
-		"schema_version": analyticsSchemaVersion,
-		"result":         result,
-		"_timestamp":     now,
+		"plugin":                    utils.PluginName,
+		"plugin_version":            utils.OpenObserveAttributeVersion,
+		"has_musixmatch_user_token": utils.ConfigUserToken() != "",
+		"schema_version":            analyticsSchemaVersion,
+		"result":                    result,
+		"_timestamp":                now,
 	}
 
 	if lookup.success() {
-		base["source"] = classifyLookupSuccess(lookup.Success)
+		category := classifyLookupSuccess(lookup.Success)
+		base["category"] = category
 	} else {
 		failure := lookup.lookupFailure()
 		base["failure_reason"] = failure.ReasonValue()

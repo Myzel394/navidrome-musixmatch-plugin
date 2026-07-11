@@ -6,11 +6,10 @@ create-prod-release:
 
 # Check release readiness before tagging.
 [group('release')]
-check-release:
+check-release: check-release-version
     #!/usr/bin/env bash
     set -euo pipefail
 
-    @just @check-release-version
     # Check if builds
     nix build .#default --no-link
 

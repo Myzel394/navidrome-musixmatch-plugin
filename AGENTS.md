@@ -14,7 +14,7 @@ Treat this file as the first source of project context. Search the codebase only
 - `plugin/musixmatch/` contains Musixmatch-specific desktop API, website search/fetch fallback, normalization, and LRC conversion logic.
 - `plugin/utils/` contains shared config, logging, constants, and PDK HTTP helpers.
 - `plugin/manifest.json` defines Navidrome plugin metadata, HTTP permissions for `apic-desktop.musixmatch.com` and `www.musixmatch.com`, cache permission for the desktop API token, and plugin config schema.
-- `.just/` and `justfile` define local build, test, install, and cleanup commands.
+- `just/` and `justfile` define local build, test, install, and cleanup commands.
 - `flake.nix` defines the Nix dev shell and reproducible TinyGo/Nix package build.
 
 ## Runtime Flow
@@ -58,15 +58,17 @@ Note: `musixmatch_captcha_id` exists in the manifest schema, but it is not curre
 Run commands from the repository root unless a command states otherwise.
 
 - Enter the Nix dev shell when available: `nix develop`.
-- Run tests: `go test ./...` from `plugin/`, or `just test` from the repo root.
 - Run tests: `go test ./...` from `plugin/`, or `just test` from the repo root. The Musixmatch desktop API end-to-end test makes real network requests.
-- Format Go code: `just lint-plugin`.
-- Full lint wrapper: `just lint` runs `just lint-plugin` and `treefmt .`.
+- Format Go and repository files: `just fmt`.
+- Vet Go packages: `just lint`.
 - Dev WASM build: `just build-dev`.
-- Production WASM build: `just build`.
-- Package plugin archive: `just pack`, which creates `plugin/navidrome-musixmatch-plugin.ndp` from `plugin/manifest.json` and `plugin/plugin.wasm`.
-- Local dev install: `just dev-install` builds, packs, and copies the `.ndp` to `navidrome-instance/data/plugins/`.
-- Local prod install: `just install` builds optimized WASM, packs, and copies the `.ndp` to `navidrome-instance/data/plugins/`.
+- Production WASM build: `just build-prod`.
+- Package plugin archive: `just package`, which creates `plugin/navidrome-musixmatch-plugin.ndp` from `plugin/manifest.json` and `plugin/plugin.wasm`.
+- Dev release package: `just create-dev-release` builds dev WASM and packages it.
+- Local dev install: `just install-dev` builds, packages, and copies the `.ndp` to `navidrome-instance/data/plugins/`.
+- Production release package: `just create-prod-release` builds the Nix package.
+- Fetch lyrics from a local Navidrome test instance: `just fetch-lyrics`.
+- Destructive cleanup: `just clean` removes build artifacts and all files under `navidrome-instance/data/plugins/`.
 - Reproducible package build: `nix build .#default`.
 
 Validated during repository onboarding: `go test ./...` passes from `plugin/`, but there are currently no test files.

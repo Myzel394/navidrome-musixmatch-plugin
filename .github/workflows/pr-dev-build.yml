@@ -19,11 +19,8 @@ jobs:
           extra_nix_config: |
             experimental-features = nix-command flakes
 
-      - name: Build dev plugin
-        run: nix develop -c just build-dev
-
-      - name: Pack dev plugin
-        run: nix develop -c just pack
+      - name: Create dev release package
+        run: nix develop -c just create-dev-release
 
       - name: Stage artifact
         run: |

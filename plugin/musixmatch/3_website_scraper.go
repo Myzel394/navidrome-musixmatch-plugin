@@ -47,60 +47,80 @@ type nextDataResponse struct {
 	} `json:"props"`
 }
 
-func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error) {
+func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
 	endpoint := fmt.Sprintf(utils.MusixmatchFetchPageURL, track.CommontrackVanityID)
 
-	utils.LogInfof("fetching lyrics page: %s", endpoint)
+	utils.LogInfof("website lyrics page: started")
 
 	body, err := utils.DoGetRequest(endpoint)
 	if err != nil || body == nil {
-		utils.LogErrorf("fetch page failed for %s: %v", track.CommontrackVanityID, err)
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("failed to fetch musixmatch page for %s: %v", track.CommontrackVanityID, err)
+		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", body != nil, err)
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
+	utils.LogInfof("website lyrics page: response received body_bytes=%d", len(body))
 
 	matches := nextDataRe.FindSubmatch(body)
 	if len(matches) < 2 {
-		utils.LogErrorf("no __NEXT_DATA__ on page for %s", track.CommontrackVanityID)
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("could not find __NEXT_DATA__ on page for %s", track.CommontrackVanityID)
+		utils.LogErrorf("website lyrics page: Next.js data not found body_bytes=%d", len(body))
+		err := fmt.Errorf("could not find __NEXT_DATA__ on page")
+		failure := utils.NewLookupFailure("lyrics_page_next_data_missing", "website", err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
+	utils.LogInfof("website lyrics page: Next.js data found bytes=%d", len(matches[1]))
 
 	var data nextDataResponse
 	if err := json.Unmarshal(matches[1], &data); err != nil {
-		utils.LogErrorf("__NEXT_DATA__ parse failed for %s: %v", track.CommontrackVanityID, err)
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("failed to parse __NEXT_DATA__ for %s: %v", track.CommontrackVanityID, err)
+		utils.LogErrorf("website lyrics page: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
+		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
 	trackData := data.Props.PageProps.Data.TrackInfo.Data
 	lang := trackData.Lyrics.Language
+	structureLines := 0
+	for _, section := range trackData.TrackStructureList {
+		structureLines += len(section.Lines)
+	}
+	utils.LogInfof("website lyrics page: parsed lyrics data track_structure_sections=%d track_structure_lines=%d subtitle_lines=%d plain_present=%t plain_bytes=%d", len(trackData.TrackStructureList), structureLines, len(trackData.Subtitle), trackData.Lyrics.Body != "", len(trackData.Lyrics.Body))
 
 	// Check for synced lyrics
 	if len(trackData.TrackStructureList) > 0 {
 		lrc := buildLRCForTrackStructure(trackData.TrackStructureList)
 		if lrc != "" {
-			utils.LogInfof("got synced lyrics (via trackStructureList) for %s (%d lines LRC)", track.CommontrackVanityID, strings.Count(lrc, "\n"))
+			utils.LogInfof("website lyrics page: got synced lyrics source=track_structure lrc_lines=%d", strings.Count(lrc, "\n"))
+			success := utils.NewLookupSuccess("website_sync")
 			return lyrics.GetLyricsResponse{
 				Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lrc}},
-			}, nil
-		}
-	} else if len(trackData.Subtitle) > 0 {
-		lrc := buildLRCForSubtitle(trackData.Subtitle)
-		if lrc != "" {
-			utils.LogInfof("got synced lyrics (via subtitle) for %s (%d lines LRC)", track.CommontrackVanityID, strings.Count(lrc, "\n"))
-			return lyrics.GetLyricsResponse{
-				Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lrc}},
-			}, nil
+			}, nil, nil, success
 		}
 	}
+	if len(trackData.Subtitle) > 0 {
+		utils.LogInfof("website lyrics page: trying subtitle fallback")
+		lrc := buildLRCForSubtitle(trackData.Subtitle)
+		if lrc != "" {
+			utils.LogInfof("website lyrics page: got synced lyrics source=subtitle lrc_lines=%d", strings.Count(lrc, "\n"))
+			success := utils.NewLookupSuccess("website_sync")
+			return lyrics.GetLyricsResponse{
+				Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lrc}},
+			}, nil, nil, success
+		}
+	}
+
+	utils.LogInfof("website lyrics page: no synced lyrics found, falling back to plain lyrics")
 
 	// Fallback to plain lyrics
 	lyricsBody := trackData.Lyrics.Body
 	if lyricsBody == "" {
-		utils.LogErrorf("empty lyrics body for %s", track.CommontrackVanityID)
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("no lyrics found for track %s", track.CommontrackVanityID)
+		utils.LogErrorf("website lyrics page: plain lyrics unavailable because body was empty")
+		failure := utils.NewLookupFailure("lyrics_empty", "website", err)
+		err = fmt.Errorf("body is empty")
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
-	utils.LogInfof("got plain lyrics for %s (%d chars)", track.CommontrackVanityID, len(lyricsBody))
+	utils.LogInfof("website lyrics page: got plain lyrics bytes=%d", len(lyricsBody))
+	success := utils.NewLookupSuccess("website_plain")
 	return lyrics.GetLyricsResponse{
 		Lyrics: []lyrics.LyricsText{{Lang: lang, Text: lyricsBody}},
-	}, nil
+	}, nil, nil, success
 }

@@ -1,8 +1,22 @@
 #!/usr/bin/env just --justfile
 
-# Check release readiness before tagging a new version.
-[group("release")]
-ready:
+[group('release')]
+create-prod-release:
+    nix build --impure .#default
+
+# Check release readiness before tagging.
+[group('release')]
+check-release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    @just @check-release-version
+    # Check if builds
+    nix build .#default --no-link
+
+# Check if the version in plugin/manifest.json and flake.nix is greater than the latest release on GitHub.
+[group('release')]
+check-release-version:
     #!/usr/bin/env bash
     set -euo pipefail
 
@@ -12,9 +26,6 @@ ready:
             exit 1
         fi
     done
-
-    # Check if builds
-    nix build .#default --no-link
 
     # Check if versions are ok
     manifest_version=$(jq -r '.version' plugin/manifest.json)

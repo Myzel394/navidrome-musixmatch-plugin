@@ -1,6 +1,11 @@
 #!/usr/bin/env just --justfile
 
-# Fetch lyrics for a random song via the Navidrome SubSonic API
+# Run Go tests.
+[group('test'), working-directory: 'plugin']
+test:
+    go test ./...
+
+# Fetch lyrics for a random song via Navidrome SubSonic.
 [group('test')]
 fetch-lyrics:
     #!/usr/bin/env bash
@@ -16,9 +21,3 @@ fetch-lyrics:
         curl -fsS "http://localhost:4533/rest/getLyrics?artist=$artist&title=$title&$auth"
     )
     echo "$lyrics"
-
-# Remove all build artifacts: wasm, ndp, zips, and the installed plugin.
-[group('test')]
-clear:
-    rm -f plugin/plugin.wasm plugin/{{plugin_name}}.ndp *.zip
-    rm -f {{plugins_dir}}/plugin.wasm {{plugins_dir}}/manifest.json {{plugins_dir}}/*

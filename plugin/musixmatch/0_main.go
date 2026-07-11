@@ -11,30 +11,42 @@ type Song struct {
 	CommontrackVanityID string
 }
 
-func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error) {
-	utils.LogInfof("FetchLyrics: artist='%s' title='%s'", input.Track.Artist, input.Track.Title)
-	if resp, err := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
-		return resp, nil
+func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	utils.LogInfof("FetchLyrics: lookup started for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
+	if resp, err, desktopFailure, success := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
+		utils.LogInfof("FetchLyrics: lookup succeeded source=desktop_api category=%s", success.CategoryValue())
+		return resp, nil, nil, success
 	} else if err != nil {
-		utils.LogErrorf("FetchLyrics desktop API fallback: %v", err)
+		status := 0
+		if desktopFailure != nil {
+			status = desktopFailure.StatusCode
+		}
+		utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", desktopFailure.ReasonValue(), status, err)
 	}
 
 	// Fallback, scrape website when a user token is configured.
 	if utils.ConfigUserToken() == "" {
 		utils.LogInfof("FetchLyrics: skipping website fallback because musixmatch_user_token is not configured")
-		return lyrics.GetLyricsResponse{}, nil
+		failure := utils.NewLookupFailure("website_fallback_disabled", "website", nil)
+		return lyrics.GetLyricsResponse{}, nil, failure, nil
 	}
 
-	track, err := searchForTrack(input)
+	track, err, failure := searchForTrack(input)
 	if err != nil {
-		utils.LogErrorf("FetchLyrics search error: %v", err)
-		return lyrics.GetLyricsResponse{}, err
-	}
-	if track == nil {
-		utils.LogInfof("FetchLyrics: no match found for '%s' - '%s'", input.Track.Artist, input.Track.Title)
-		return lyrics.GetLyricsResponse{}, nil
+		status := 0
+		if failure != nil {
+			status = failure.StatusCode
+		}
+		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", failure.ReasonValue(), status, err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
-	utils.LogInfof("FetchLyrics: matched '%s' by '%s'", track.Title, track.Artist)
-	return scrapeWebsiteLyricsForTrack(track)
+	if track != nil {
+		utils.LogInfof("FetchLyrics: website search match_found")
+		return scrapeWebsiteLyricsForTrack(track)
+	}
+
+	utils.LogInfof("FetchLyrics: website search no_match_found")
+	failure = utils.NewLookupFailure("search_no_match", "website", nil)
+	return lyrics.GetLyricsResponse{}, nil, failure, nil
 }

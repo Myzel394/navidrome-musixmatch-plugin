@@ -1,6 +1,6 @@
 package utils
 
-const LogPrefix = "navidrome-musixmatch-plugin: "
+const PluginName = "navidrome-musixmatch-plugin"
 
 const HTTPStatusOK = 200
 
@@ -10,14 +10,29 @@ const (
 )
 
 const (
-	ConfigKeyUserToken  = "musixmatch_user_token"
-	ConfigKeyUserAgent  = "musixmatch_user_agent"
-	ConfigKeyHTTPAccept = "musixmatch_http_accept"
-	ConfigKeyCaptchaID  = "musixmatch_captcha_id"
+	ConfigKeyUserToken    = "musixmatch_user_token"
+	ConfigKeyUserAgent    = "musixmatch_user_agent"
+	ConfigKeyHTTPAccept   = "musixmatch_http_accept"
+	ConfigKeyCaptchaID    = "musixmatch_captcha_id"
+	ConfigKeyShareErrors  = "analytics_share_errors"
+	ConfigKeyShareMetrics = "analytics_share_metrics"
 )
 
 const (
 	MusixmatchSearchPageURL = "https://www.musixmatch.com/search?query=%s"
 	MusixmatchFetchPageURL  = "https://www.musixmatch.com/lyrics/%s"
 	MusixmatchDesktopAPIURL = "https://apic-desktop.musixmatch.com/ws/1.1/%s"
+)
+
+const (
+	OpenObserveBaseURL    = "https://bugs.myzel394.app"
+	OpenObserveOrg        = "default"
+	OpenObserveTraceURL   = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/v1/traces"
+	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
+)
+
+var (
+	OpenObserveAttributePluginSource string
+	OpenObserveAttributeVersion      string
+	OpenObserveAuthToken             string
 )

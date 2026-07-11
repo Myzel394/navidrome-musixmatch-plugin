@@ -114,7 +114,8 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	if lyricsBody == "" {
 		utils.LogErrorf("website lyrics page: plain lyrics unavailable because body was empty")
 		failure := utils.NewLookupFailure("lyrics_empty", "website", err)
-		return lyrics.GetLyricsResponse{}, nil, failure, nil
+		err = fmt.Errorf("body is empty")
+		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
 	utils.LogInfof("website lyrics page: got plain lyrics bytes=%d", len(lyricsBody))

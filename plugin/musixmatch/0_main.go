@@ -1,8 +1,6 @@
 package musixmatch
 
 import (
-	"fmt"
-
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
@@ -29,9 +27,8 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 	// Fallback, scrape website when a user token is configured.
 	if utils.ConfigUserToken() == "" {
 		utils.LogInfof("FetchLyrics: skipping website fallback because musixmatch_user_token is not configured")
-		err := fmt.Errorf("website fallback disabled because musixmatch_user_token is not configured")
-		failure := utils.NewLookupFailure("website_fallback_disabled", "website", err)
-		return lyrics.GetLyricsResponse{}, err, failure, nil
+		failure := utils.NewLookupFailure("website_fallback_disabled", "website", nil)
+		return lyrics.GetLyricsResponse{}, nil, failure, nil
 	}
 
 	track, err, failure := searchForTrack(input)
@@ -43,13 +40,13 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", failure.ReasonValue(), status, err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
-	if track == nil {
-		utils.LogInfof("FetchLyrics: website search no_match_found")
-		err := fmt.Errorf("no Musixmatch match found")
-		failure := utils.NewLookupFailure("search_no_match", "website", err)
-		return lyrics.GetLyricsResponse{}, err, failure, nil
+
+	if track != nil {
+		utils.LogInfof("FetchLyrics: website search match_found")
+		return scrapeWebsiteLyricsForTrack(track)
 	}
 
-	utils.LogInfof("FetchLyrics: website search match_found")
-	return scrapeWebsiteLyricsForTrack(track)
+	utils.LogInfof("FetchLyrics: website search no_match_found")
+	failure = utils.NewLookupFailure("search_no_match", "website", nil)
+	return lyrics.GetLyricsResponse{}, nil, failure, nil
 }

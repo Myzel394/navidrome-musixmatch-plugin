@@ -6,7 +6,7 @@ create-prod-release:
 
 # Check release readiness before tagging.
 [group('release')]
-release-check:
+check-release:
     #!/usr/bin/env bash
     set -euo pipefail
 

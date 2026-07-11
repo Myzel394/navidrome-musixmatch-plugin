@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
+	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
 
 const (
@@ -14,7 +15,7 @@ const (
 
 type metricRecord map[string]any
 
-func reportLookupMetrics(lookup lookupAnalytics) {
+func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) {
 	result := "failure"
 	if lookup.success() {
 		result = "success"
@@ -22,21 +23,25 @@ func reportLookupMetrics(lookup lookupAnalytics) {
 
 	now := time.Now().UTC().Unix()
 	base := metricRecord{
-		"plugin":                    utils.PluginName,
-		"plugin_version":            utils.OpenObserveAttributeVersion,
-		"has_musixmatch_user_token": utils.ConfigUserToken() != "",
-		"schema_version":            analyticsSchemaVersion,
-		"result":                    result,
-		"_timestamp":                now,
+		"plugin":                     utils.PluginName,
+		"plugin_version":             utils.OpenObserveAttributeVersion,
+		"has_musixmatch_user_token":  utils.ConfigUserToken() != "",
+		"track.has_artist":           input.Track.Artist != "",
+		"track.has_album":            input.Track.Album != "",
+		"track.has_title":            input.Track.Title != "",
+		"track.has_mzb_recording_id": input.Track.MBZRecordingID != "",
+		"schema_version":             analyticsSchemaVersion,
+		"result":                     result,
+		"_timestamp":                 now,
 	}
 
 	if lookup.success() {
-		category := classifyLookupSuccess(lookup.Success)
-		base["category"] = category
+		base["source"] = classifyLookupSuccess(lookup.Success)
 	} else {
 		failure := lookup.lookupFailure()
 		base["failure_reason"] = failure.ReasonValue()
-		base["failure_source"] = failure.SourceValue()
+		base["source"] = failure.SourceValue()
+		base["status"] = failure.StatusCodeValue()
 	}
 
 	metrics := []metricRecord{

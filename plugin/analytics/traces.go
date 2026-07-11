@@ -33,8 +33,10 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 			otlpStringAttr("lookup.failure_reason", failure.ReasonValue()),
 			otlpStringAttr("lookup.source", failure.SourceValue()),
 			otlpDoubleAttr("lookup.duration_ms", float64(lookup.Duration.Milliseconds())),
+			otlpStringAttr("track.album", lookup.Input.Track.Album),
 			otlpStringAttr("track.artist", lookup.Input.Track.Artist),
 			otlpStringAttr("track.title", lookup.Input.Track.Title),
+			otlpStringAttr("track.mzb_recording_id", lookup.Input.Track.MBZRecordingID),
 			otlpBoolAttr("config.has_musixmatch_user_token", utils.ConfigUserToken() != ""),
 
 			otlpStringAttr("plugin.source", utils.OpenObserveAttributePluginSource),

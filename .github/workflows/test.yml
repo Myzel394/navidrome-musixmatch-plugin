@@ -23,3 +23,14 @@ jobs:
       - name: Run tests
         working-directory: plugin
         run: go test ./...
+
+      - name: Notify daily test failure
+        if: ${{ failure() && github.event_name == 'schedule' }}
+        env:
+          NTFY_TOPIC_URL: ${{ secrets.NTFY_TOPIC_URL }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          curl --fail --show-error --silent --retry 3 \
+            --header "Title: [navidrome-musixmatch-plugin] Daily test failed" \
+            --data "Daily test failed: ${RUN_URL}" \
+            "${NTFY_TOPIC_URL}"

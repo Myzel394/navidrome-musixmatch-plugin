@@ -34,6 +34,9 @@ type nextDataResponse struct {
 			Data struct {
 				TrackInfo struct {
 					Data struct {
+						Track struct {
+							AlbumName string `json:"albumName"`
+						} `json:"track"`
 						Lyrics struct {
 							Body     string `json:"body"`
 							Language string `json:"language"`
@@ -47,12 +50,14 @@ type nextDataResponse struct {
 	} `json:"props"`
 }
 
-func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+var doMusixmatchWebsiteLyricsGetRequest = utils.DoMusixmatchWebsiteGetRequest
+
+func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
 	endpoint := fmt.Sprintf(utils.MusixmatchFetchPageURL, track.CommontrackVanityID)
 
 	utils.LogInfof("website lyrics page: started")
 
-	resp, err := utils.DoMusixmatchWebsiteGetRequest(endpoint)
+	resp, err := doMusixmatchWebsiteLyricsGetRequest(endpoint)
 	if err != nil || resp == nil {
 		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", resp != nil && resp.Body != nil, err)
 		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
@@ -87,6 +92,11 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	}
 
 	trackData := data.Props.PageProps.Data.TrackInfo.Data
+	if track._albumCheckRequired && !validStrictSimilarity(input.Track.Album, trackData.Track.AlbumName) {
+		utils.LogInfof("website lyrics page: album_not_similar_enough, rejecting lyrics; requested_album=%s actual_album=%s", input.Track.Album, trackData.Track.AlbumName)
+		err := fmt.Errorf("requested album and candidate album are not similar enough requested_album=%s actual_album=%s", input.Track.Album, trackData.Track.AlbumName)
+		return lyrics.GetLyricsResponse{}, err, nil, nil
+	}
 	lang := trackData.Lyrics.Language
 	structureLines := 0
 	for _, section := range trackData.TrackStructureList {

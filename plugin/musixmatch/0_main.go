@@ -9,6 +9,7 @@ type Song struct {
 	Artist              string
 	Title               string
 	CommontrackVanityID string
+	_albumCheckRequired bool
 }
 
 // Return error whenever a lyrics could not be fetched.
@@ -40,16 +41,18 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 	track, err, failure := searchForTrack(input)
 	if err != nil {
 		status := 0
+		reason := ""
 		if failure != nil {
 			status = failure.StatusCode
+			reason = failure.ReasonValue()
 		}
-		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", failure.ReasonValue(), status, err)
+		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", reason, status, err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
 	if track != nil {
 		utils.LogInfof("FetchLyrics: website search match_found")
-		return scrapeWebsiteLyricsForTrack(track)
+		return scrapeWebsiteLyricsForTrack(track, input)
 	}
 
 	utils.LogInfof("FetchLyrics: website search no_match_found")

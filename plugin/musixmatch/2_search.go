@@ -112,4 +112,3 @@ func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 	utils.LogInfof("website search: no_match_found because results were empty best_match_present=%t best_match_is_track=%t", searchResponse.BestMatch != nil, bestMatchIsTrack)
 	return nil, nil, nil
 }
-

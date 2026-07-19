@@ -44,5 +44,3 @@ func validTitleOnlyArtist(requestedArtist, candidateArtist string) bool {
 func collapseSearchWhitespace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }
-
-

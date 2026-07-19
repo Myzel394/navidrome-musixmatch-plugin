@@ -42,9 +42,19 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 
 	utils.LogInfof("website search: started artist_present=%t title_present=%t", normArtist != "", normTitle != "")
 
-	body, err := utils.DoGetRequest(endpoint)
-	if err != nil || body == nil {
-		utils.LogErrorf("website search: search request failed body_present=%t error=%v", body != nil, err)
+	httpResp, err := utils.DoMusixmatchWebsiteGetRequest(endpoint)
+	if err != nil || httpResp == nil {
+		utils.LogErrorf("website search: search request failed body_present=%t error=%v", httpResp != nil && httpResp.Body != nil, err)
+		failure := utils.NewLookupFailure("search_request_failed", "website", err)
+		return nil, err, failure
+	}
+	if err, failure := detectWebsiteGate("search", httpResp); failure != nil {
+		return nil, err, failure
+	}
+	body := httpResp.Body
+	if httpResp.StatusCode != utils.HTTPStatusOK {
+		utils.LogErrorf("HTTP %d from Musixmatch", httpResp.StatusCode)
+		err := &utils.HTTPError{StatusCode: httpResp.StatusCode}
 		failure := utils.NewLookupFailure("search_request_failed", "website", err)
 		return nil, err, failure
 	}

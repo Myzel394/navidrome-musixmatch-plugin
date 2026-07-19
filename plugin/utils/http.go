@@ -1,7 +1,6 @@
 package utils
 
 import (
-	"net/url"
 	"strings"
 
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
@@ -10,18 +9,8 @@ import (
 func DoGetRequest(endpoint string) ([]byte, error) {
 	userAgent := ConfigUserAgent()
 	httpAcceptHeader := ConfigSearchHTTPAcceptHeader()
-	musixmatchCookie := ConfigUserToken()
-	musixmatchConfigID := ConfigCaptchaID()
 
 	cookies := make([]string, 0, 2)
-
-	if musixmatchCookie != "" {
-		cookies = append(cookies, "musixmatchUserToken="+url.QueryEscape(musixmatchCookie))
-
-		if musixmatchConfigID != "" {
-			cookies = append(cookies, "captcha_id="+url.QueryEscape(musixmatchConfigID))
-		}
-	}
 
 	cookie := strings.Join(cookies, "; ")
 
@@ -33,8 +22,9 @@ func DoGetRequest(endpoint string) ([]byte, error) {
 
 	resp := req.Send()
 	if resp.Status() != HTTPStatusOK {
-		LogErrorf("HTTP %d from Musixmatch", resp.Status())
+		LogErrorf("HTTP %d received", resp.Status())
 		return resp.Body(), &HTTPError{StatusCode: int(resp.Status())}
 	}
 	return resp.Body(), nil
 }
+

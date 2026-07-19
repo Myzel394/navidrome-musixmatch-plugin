@@ -52,9 +52,19 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 
 	utils.LogInfof("website lyrics page: started")
 
-	body, err := utils.DoGetRequest(endpoint)
-	if err != nil || body == nil {
-		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", body != nil, err)
+	resp, err := utils.DoMusixmatchWebsiteGetRequest(endpoint)
+	if err != nil || resp == nil {
+		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", resp != nil && resp.Body != nil, err)
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
+	}
+	if err, failure := detectWebsiteGate("lyrics_page", resp); failure != nil {
+		return lyrics.GetLyricsResponse{}, err, failure, nil
+	}
+	body := resp.Body
+	if resp.StatusCode != utils.HTTPStatusOK {
+		utils.LogErrorf("HTTP %d from Musixmatch", resp.StatusCode)
+		err := &utils.HTTPError{StatusCode: resp.StatusCode}
 		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}

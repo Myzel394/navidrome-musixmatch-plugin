@@ -113,6 +113,10 @@
           "elements": [
             {
               "type": "Control",
+              "scope": "#/properties/musixmatch_captcha_id"
+            },
+            {
+              "type": "Control",
               "scope": "#/properties/musixmatch_user_agent"
             },
             {

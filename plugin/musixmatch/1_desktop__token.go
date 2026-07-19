@@ -35,31 +35,31 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	err := desktopGet("token.get", query, &resp)
 	if err != nil {
 		utils.LogErrorf("desktop API: token request failed error=%v", err)
-		failure := utils.NewLookupFailure("desktop_token_request_failed", "desktop_api", err)
+		failure := utils.NewLookupFailure("desktop_token_request_failed", "desktop_api", err).WithPhase("desktop_token")
 		return "", err, failure
 	}
 	utils.LogInfof("desktop API: token response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
 		err := fmt.Errorf("desktop API returned 401 while fetching token")
-		failure := utils.NewLookupFailure("desktop_token_blocked", "desktop_api", err).WithStatusCode(resp.Message.Header.StatusCode)
+		failure := utils.NewLookupFailure("desktop_token_blocked", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)
 		return "", err, failure
 	}
 	if resp.Message.Header.StatusCode != desktopAPISuccess {
 		err := fmt.Errorf("desktop API returned status %d while fetching token", resp.Message.Header.StatusCode)
-		failure := utils.NewLookupFailure("desktop_token_status", "desktop_api", err).WithStatusCode(resp.Message.Header.StatusCode)
+		failure := utils.NewLookupFailure("desktop_token_status", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)
 		return "", err, failure
 	}
 
 	var body desktopTokenBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
 		utils.LogErrorf("desktop API: failed to parse desktop API token body body_bytes=%d error=%v", len(resp.Message.Body), err)
-		failure := utils.NewLookupFailure("desktop_token_parse", "desktop_api", err)
+		failure := utils.NewLookupFailure("desktop_token_parse", "desktop_api", err).WithPhase("desktop_token")
 		return "", err, failure
 	}
 	if body.UserToken == "" {
 		utils.LogInfof("desktop API: parsed token response token_present=false")
 		err := fmt.Errorf("desktop API returned empty token")
-		failure := utils.NewLookupFailure("desktop_token_empty", "desktop_api", err)
+		failure := utils.NewLookupFailure("desktop_token_empty", "desktop_api", err).WithPhase("desktop_token")
 		return "", err, failure
 	}
 	utils.LogInfof("desktop API: parsed token response token_present=true")

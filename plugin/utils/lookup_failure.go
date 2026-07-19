@@ -8,6 +8,7 @@ import (
 type LookupFailure struct {
 	Reason     string
 	Source     string
+	Phase      string
 	StatusCode int
 	Err        error
 }
@@ -65,16 +66,16 @@ func (f *LookupFailure) Error() string {
 }
 
 func (f *LookupFailure) Unwrap() error {
-	if f == nil {
-		return nil
-	}
 	return f.Err
 }
 
 func (f *LookupFailure) WithStatusCode(statusCode int) *LookupFailure {
-	if f != nil {
-		f.StatusCode = statusCode
-	}
+	f.StatusCode = statusCode
+	return f
+}
+
+func (f *LookupFailure) WithPhase(phase string) *LookupFailure {
+	f.Phase = phase
 	return f
 }
 
@@ -90,6 +91,13 @@ func (f *LookupFailure) SourceValue() string {
 		return "unknown"
 	}
 	return f.Source
+}
+
+func (f *LookupFailure) PhaseValue() string {
+	if f == nil || f.Phase == "" {
+		return "unknown"
+	}
+	return f.Phase
 }
 
 func (s *LookupSuccess) CategoryValue() string {

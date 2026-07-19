@@ -32,6 +32,7 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 			otlpStringAttr("lookup.result", "failure"),
 			otlpStringAttr("lookup.failure_reason", failure.ReasonValue()),
 			otlpStringAttr("lookup.source", failure.SourceValue()),
+			otlpStringAttr("lookup.phase", failure.PhaseValue()),
 			otlpDoubleAttr("lookup.duration_ms", float64(lookup.Duration.Milliseconds())),
 			otlpStringAttr("track.album", lookup.Input.Track.Album),
 			otlpStringAttr("track.artist", lookup.Input.Track.Artist),

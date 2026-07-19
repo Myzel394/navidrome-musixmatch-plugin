@@ -55,7 +55,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	resp, err := utils.DoMusixmatchWebsiteGetRequest(endpoint)
 	if err != nil || resp == nil {
 		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", resp != nil && resp.Body != nil, err)
-		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	if err, failure := detectWebsiteGate("lyrics_page", resp); failure != nil {
@@ -65,7 +65,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	if resp.StatusCode != utils.HTTPStatusOK {
 		utils.LogErrorf("HTTP %d from Musixmatch", resp.StatusCode)
 		err := &utils.HTTPError{StatusCode: resp.StatusCode}
-		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("website lyrics page: response received body_bytes=%d", len(body))
@@ -74,7 +74,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	if len(matches) < 2 {
 		utils.LogErrorf("website lyrics page: Next.js data not found body_bytes=%d", len(body))
 		err := fmt.Errorf("could not find __NEXT_DATA__ on page")
-		failure := utils.NewLookupFailure("lyrics_page_next_data_missing", "website", err)
+		failure := utils.NewLookupFailure("lyrics_page_next_data_missing", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("website lyrics page: Next.js data found bytes=%d", len(matches[1]))
@@ -82,7 +82,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	var data nextDataResponse
 	if err := json.Unmarshal(matches[1], &data); err != nil {
 		utils.LogErrorf("website lyrics page: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
-		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err)
+		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
@@ -123,7 +123,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	lyricsBody := trackData.Lyrics.Body
 	if lyricsBody == "" {
 		utils.LogErrorf("website lyrics page: plain lyrics unavailable because body was empty")
-		failure := utils.NewLookupFailure("lyrics_empty", "website", err)
+		failure := utils.NewLookupFailure("lyrics_empty", "website", err).WithPhase("website_lyrics")
 		err = fmt.Errorf("body is empty")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}

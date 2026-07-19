@@ -32,7 +32,7 @@ const (
 )
 
 var (
-	OpenObserveAttributePluginSource = "unknown"
-	OpenObserveAttributeVersion      = "unknown"
+	OpenObserveAttributePluginSource string
+	OpenObserveAttributeVersion      string
 	OpenObserveAuthToken             string
 )

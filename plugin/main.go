@@ -9,6 +9,7 @@ type plugin struct{}
 
 //go:wasmexport nd_on_init
 func ndOnInit() int32 {
+	utils.InitGlobalConstants()
 	utils.LogInfof("initialized")
 	return 0
 }

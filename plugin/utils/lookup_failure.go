@@ -65,10 +65,6 @@ func (f *LookupFailure) Error() string {
 	return f.ReasonValue()
 }
 
-func (f *LookupFailure) Unwrap() error {
-	return f.Err
-}
-
 func (f *LookupFailure) WithStatusCode(statusCode int) *LookupFailure {
 	f.StatusCode = statusCode
 	return f

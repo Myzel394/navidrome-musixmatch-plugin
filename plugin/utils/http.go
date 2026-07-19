@@ -27,4 +27,3 @@ func DoGetRequest(endpoint string) ([]byte, error) {
 	}
 	return resp.Body(), nil
 }
-

@@ -4,8 +4,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 	"github.com/navidrome/navidrome/plugins/pdk/go/host"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 type HTTPResponse struct {
@@ -13,7 +13,6 @@ type HTTPResponse struct {
 	StatusCode int
 	Headers    map[string]string
 }
-
 
 func DoMusixmatchWebsiteGetRequest(endpoint string) (*HTTPResponse, error) {
 	userAgent := ConfigUserAgent()
@@ -55,4 +54,3 @@ func DoMusixmatchWebsiteGetRequest(endpoint string) (*HTTPResponse, error) {
 		Headers:    resp.Headers,
 	}, nil
 }
-

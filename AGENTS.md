@@ -17,6 +17,8 @@ Treat this file as the first source of project context. Search the codebase only
 - `just/` and `justfile` define local build, test, install, and cleanup commands.
 - `flake.nix` defines the Nix dev shell and reproducible TinyGo/Nix package build.
 
+- Ignore anything inside `navidrome-instance`
+
 ## Runtime Flow
 
 1. `plugin/main.go` calls `lyrics.Register(&plugin{})` in `init`.

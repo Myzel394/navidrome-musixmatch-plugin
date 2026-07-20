@@ -2,7 +2,7 @@ package musixmatch
 
 import (
 	"encoding/json"
-	"fmt"
+	"errors"
 	"net/url"
 	"strings"
 
@@ -43,20 +43,16 @@ func websiteGateFailure(phase, reason string, status int, signal string) (error,
 	case "captcha_required":
 		message = "musixmatch CAPTCHA required; solve the CAPTCHA in a browser, copy captcha_id into plugin settings, and retry"
 	}
-	err := fmt.Errorf("%s", message)
+	err := errors.New(message)
 	websitePhase := websiteGateLookupPhase(phase)
 	return err, utils.NewLookupFailure(reason, "website", err).WithPhase(websitePhase).WithStatusCode(status)
 }
 
 func websiteGateLookupPhase(phase string) string {
-	switch phase {
-	case "search":
+	if phase == "search" {
 		return "website_search"
-	case "lyrics_page":
-		return "website_lyrics"
-	default:
-		return "website_lyrics"
 	}
+	return "website_lyrics"
 }
 
 func findHeader(headers map[string]string, key string) string {

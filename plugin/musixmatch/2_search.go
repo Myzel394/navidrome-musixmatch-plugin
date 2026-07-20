@@ -47,7 +47,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 		if err != nil || failure != nil {
 			return nil, err, failure
 		}
-		if track != nil && validTitleOnlyArtist(input.Track.Artist, track.Artist) {
+		if track != nil && validStrictSimilarity(input.Track.Artist, track.Artist) {
 			track._albumCheckRequired = true
 			return track, nil, nil
 		}

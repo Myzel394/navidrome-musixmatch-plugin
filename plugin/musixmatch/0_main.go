@@ -22,11 +22,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 		utils.LogInfof("FetchLyrics: lookup succeeded source=desktop_api category=%s", success.CategoryValue())
 		return resp, nil, nil, success
 	} else if err != nil {
-		status := 0
-		if desktopFailure != nil {
-			status = desktopFailure.StatusCode
-		}
-		utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", desktopFailure.ReasonValue(), status, err)
+		utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", desktopFailure.ReasonValue(), desktopFailure.StatusCodeValue(), err)
 	}
 
 	// If no user token provided, we cannot fallback to the website,

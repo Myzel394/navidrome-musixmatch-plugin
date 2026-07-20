@@ -32,15 +32,6 @@ func songFromSearchTrack(track *searchTrack) *Song {
 	return &Song{Artist: track.ArtistName, Title: track.TrackName, CommontrackVanityID: track.CommontrackVanityID}
 }
 
-func validTitleOnlyArtist(requestedArtist, candidateArtist string) bool {
-	artist := normalize(requestedArtist)
-	candidateArtist = normalize(candidateArtist)
-	if artist == "" || candidateArtist == "" {
-		return false
-	}
-	return runeLevenshteinSimilarity(artist, candidateArtist) > 0.9
-}
-
 func collapseSearchWhitespace(s string) string {
 	return strings.Join(strings.Fields(s), " ")
 }

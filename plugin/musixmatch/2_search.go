@@ -7,6 +7,7 @@ import (
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 var doMusixmatchWebsiteSearchGetRequest = utils.DoMusixmatchWebsiteGetRequest
@@ -61,6 +62,7 @@ func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupF
 
 func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 	endpoint := fmt.Sprintf(utils.MusixmatchSearchPageURL, url.QueryEscape(query))
+	utils.LogInfof("website search: query attempt query_chars=%d", len(query))
 
 	httpResp, err := doMusixmatchWebsiteSearchGetRequest(endpoint)
 	if err != nil || httpResp == nil {
@@ -69,11 +71,13 @@ func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 		return nil, err, failure
 	}
 	if err, failure := detectWebsiteGate("search", httpResp); failure != nil {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: blocked response body=%s", string(httpResp.Body)))
 		return nil, err, failure
 	}
 	body := httpResp.Body
 	if httpResp.StatusCode != utils.HTTPStatusOK {
 		utils.LogErrorf("HTTP %d from Musixmatch", httpResp.StatusCode)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: response body=%s", string(body)))
 		err := &utils.HTTPError{StatusCode: httpResp.StatusCode}
 		failure := utils.NewLookupFailure("search_request_failed", "website", err).WithPhase("website_search")
 		return nil, err, failure
@@ -83,6 +87,7 @@ func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 	matches := nextDataRe.FindSubmatch(body)
 	if len(matches) < 2 {
 		utils.LogInfof("website search: failed to find musixmatch search Next.js data body_bytes=%d", len(body))
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: response body=%s", string(body)))
 		err := fmt.Errorf("failed to find musixmatch search Next.js data")
 		failure := utils.NewLookupFailure("search_next_data_missing", "website", err).WithPhase("website_search")
 		return nil, err, failure
@@ -92,6 +97,7 @@ func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 	var resp searchResponse
 	if err := json.Unmarshal(matches[1], &resp); err != nil {
 		utils.LogErrorf("website search: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: Next.js data=%s", string(matches[1])))
 		failure := utils.NewLookupFailure("search_json_parse_failed", "website", err).WithPhase("website_search")
 		return nil, err, failure
 	}

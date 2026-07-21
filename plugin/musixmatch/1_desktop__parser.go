@@ -2,10 +2,12 @@ package musixmatch
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 func lyricsFromDesktopRichsync(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
@@ -21,6 +23,7 @@ func lyricsFromDesktopRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 	var body desktopRichsyncBody
 	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
 		utils.LogInfof("desktop API: richsync lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: richsync response body=%s", string(call.Message.Body)))
 		return lyrics.GetLyricsResponse{}, false
 	}
 	if body.Richsync.Body == "" {
@@ -31,6 +34,7 @@ func lyricsFromDesktopRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 	var lines []desktopRichsyncLine
 	if err := json.Unmarshal([]byte(body.Richsync.Body), &lines); err != nil {
 		utils.LogErrorf("desktop API richsync parse failed: %v", err)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: richsync payload body=%s", body.Richsync.Body))
 		return lyrics.GetLyricsResponse{}, false
 	}
 
@@ -66,6 +70,7 @@ func lyricsFromDesktopSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, 
 	var body desktopSubtitleBody
 	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
 		utils.LogInfof("desktop API: subtitle lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: subtitle response body=%s", string(call.Message.Body)))
 		return lyrics.GetLyricsResponse{}, false
 	}
 	if len(body.SubtitleList) == 0 {
@@ -96,6 +101,7 @@ func lyricsFromDesktopPlain(call desktopResponse) (lyrics.GetLyricsResponse, boo
 	var body desktopLyricsBody
 	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
 		utils.LogInfof("desktop API: plain lyrics unavailable because response could not be parsed body_bytes=%d", len(call.Message.Body))
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: plain response body=%s", string(call.Message.Body)))
 		return lyrics.GetLyricsResponse{}, false
 	}
 	if body.Lyrics.Body == "" {

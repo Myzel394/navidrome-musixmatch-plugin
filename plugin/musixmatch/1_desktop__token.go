@@ -8,6 +8,7 @@ import (
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/host"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 const (
@@ -40,11 +41,13 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	}
 	utils.LogInfof("desktop API: token response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
 	if resp.Message.Header.StatusCode == desktopAPIBlocked {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: token response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned 401 while fetching token")
 		failure := utils.NewLookupFailure("desktop_token_blocked", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)
 		return "", err, failure
 	}
 	if resp.Message.Header.StatusCode != desktopAPISuccess {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: token response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned status %d while fetching token", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("desktop_token_status", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)
 		return "", err, failure
@@ -53,6 +56,7 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	var body desktopTokenBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
 		utils.LogErrorf("desktop API: failed to parse desktop API token body body_bytes=%d error=%v", len(resp.Message.Body), err)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: token response body=%s", string(resp.Message.Body)))
 		failure := utils.NewLookupFailure("desktop_token_parse", "desktop_api", err).WithPhase("desktop_token")
 		return "", err, failure
 	}

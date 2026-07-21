@@ -74,6 +74,10 @@
           "scope": "#/properties/musixmatch_user_token"
         },
         {
+          "type": "Control",
+          "scope": "#/properties/musixmatch_captcha_id"
+        },
+        {
           "type": "Group",
           "label": "Analytics",
           "elements": [
@@ -111,10 +115,6 @@
           "type": "Group",
           "label": "Advanced",
           "elements": [
-            {
-              "type": "Control",
-              "scope": "#/properties/musixmatch_captcha_id"
-            },
             {
               "type": "Control",
               "scope": "#/properties/musixmatch_user_agent"

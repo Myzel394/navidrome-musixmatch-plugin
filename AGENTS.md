@@ -95,3 +95,7 @@ Validated during repository onboarding: `go test ./...` passes from `plugin/`, b
 ## Best-Practice Source
 
 This file follows the `AGENTS.md` convention: a root Markdown file that gives coding agents project overview, build/test commands, code layout, and known gotchas. The convention is documented at `https://agents.md/` and is also recognized by GitHub Copilot repository custom-instructions documentation as an agent-instructions file.
+
+## Important gotchas
+
+Log stuff using `utils.LogInfof` / `utils.LogErrorf`. For sensitive data, such as the raw responses of HTTP requests, do not log them. Instead log the amount of bytes received. However, you can log the raw response in the Navidrome log using `pdk.Log(pdk.LogDebug, msg)`. This will not be sent to the server, but will be visible in the Navidrome log.

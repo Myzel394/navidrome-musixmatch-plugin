@@ -1,7 +1,7 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
@@ -32,7 +32,7 @@
           "type": "string",
           "title": "Musixmatch Captcha ID",
           "default": "",
-          "description": "If you encounter a captcha when searching MusixMatch, open the search page in your browser, solve the captcha, and then copy the 'captcha_id' cookie value here. This will allow the plugin to bypass the captcha for future searches."
+          "description": "Open the search page in your browser, solve the captcha, and then copy the 'captcha_id' cookie value here. This will allow the plugin to bypass the captcha for future searches."
         },
         "musixmatch_user_agent": {
           "type": "string",
@@ -46,11 +46,19 @@
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
         },
+        "max_website_candidate_attempts": {
+          "type": "integer",
+          "title": "Max Website Candidate Attempts",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of unique Musixmatch website lyric pages to fetch and validate per lookup before returning no verified website lyrics."
+        },
         "analytics_info": {
           "type": "string",
           "title": "Analytics info",
           "default": "",
-          "description": "Analytics is used only to debug plugin issues. Failed lookups may send the requested artist/title and sanitized plugin logs. Anonymous metrics may send success/failure counters, lookup duration, failure reason, and lyric source/type, but not song artist/title, file paths, library IDs, or local Navidrome IDs. Data is sent to my self-hosted OpenObserve instance, not shared with third parties, deleted after 30 days, and accessible only by me."
+          "description": "Analytics is used only to debug plugin issues. Failed lookups may send the requested artist/title and sanitized plugin logs. Anonymous metrics may send success/failure counters, lookup duration, failure reason, and lyric source/type, but not song artist/title, file paths, library IDs, or local Navidrome IDs. Data is sent to my self-hosted OpenObserve instance, full-disk encrypted, not shared with third parties, and accessible only by me. Traces are deleted after 30 days. Metrics are stored indefinitely."
         },
         "analytics_share_errors": {
           "type": "boolean",
@@ -72,6 +80,10 @@
         {
           "type": "Control",
           "scope": "#/properties/musixmatch_user_token"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/musixmatch_captcha_id"
         },
         {
           "type": "Group",
@@ -118,6 +130,10 @@
             {
               "type": "Control",
               "scope": "#/properties/musixmatch_http_accept"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/max_website_candidate_attempts"
             }
           ]
         }

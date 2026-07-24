@@ -1,5 +1,7 @@
 #!/usr/bin/env just --justfile
 
+alias clean := clear
+
 # Format Go and repository files.
 [group('dev')]
 format:
@@ -36,6 +38,6 @@ install-dev:
 
 # Destructive: remove build artifacts and all files under navidrome-instance/data/plugins/.
 [group('install')]
-clean:
+clear:
     rm -f plugin/plugin.wasm plugin/{{plugin_name}}.ndp *.zip
     rm -f {{plugins_dir}}/*

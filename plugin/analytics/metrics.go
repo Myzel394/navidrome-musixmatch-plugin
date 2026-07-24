@@ -41,6 +41,7 @@ func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) 
 		failure := lookup.lookupFailure()
 		base["failure_reason"] = failure.ReasonValue()
 		base["source"] = failure.SourceValue()
+		base["phase"] = failure.PhaseValue()
 		base["status"] = failure.StatusCodeValue()
 	}
 

@@ -50,6 +50,14 @@ type desktopLyricsBody struct {
 	} `json:"lyrics"`
 }
 
+type desktopTrackBody struct {
+	Track struct {
+		TrackName  string `json:"track_name"`
+		ArtistName string `json:"artist_name"`
+		AlbumName  string `json:"album_name"`
+	} `json:"track"`
+}
+
 type desktopRichsyncLine struct {
 	Timestamp float64 `json:"ts"`
 	Text      string  `json:"x"`

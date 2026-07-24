@@ -8,6 +8,7 @@ import (
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 var nextDataRe = regexp.MustCompile(`(?s)<script id="__NEXT_DATA__" type="application/json">(.*?)</script>`)
@@ -34,6 +35,10 @@ type nextDataResponse struct {
 			Data struct {
 				TrackInfo struct {
 					Data struct {
+						Track struct {
+							AlbumName  string `json:"albumName"`
+							ArtistName string `json:"artistName"`
+						} `json:"track"`
 						Lyrics struct {
 							Body     string `json:"body"`
 							Language string `json:"language"`
@@ -47,15 +52,29 @@ type nextDataResponse struct {
 	} `json:"props"`
 }
 
-func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+var doMusixmatchWebsiteLyricsGetRequest = utils.DoMusixmatchWebsiteGetRequest
+
+func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
 	endpoint := fmt.Sprintf(utils.MusixmatchFetchPageURL, track.CommontrackVanityID)
 
 	utils.LogInfof("website lyrics page: started")
 
-	body, err := utils.DoGetRequest(endpoint)
-	if err != nil || body == nil {
-		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", body != nil, err)
-		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err)
+	resp, err := doMusixmatchWebsiteLyricsGetRequest(endpoint)
+	if err != nil || resp == nil {
+		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", resp != nil && resp.Body != nil, err)
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
+		return lyrics.GetLyricsResponse{}, err, failure, nil
+	}
+	if err, failure := detectWebsiteGate("lyrics_page", resp); failure != nil {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: blocked response body=%s", string(resp.Body)))
+		return lyrics.GetLyricsResponse{}, err, failure, nil
+	}
+	body := resp.Body
+	if resp.StatusCode != utils.HTTPStatusOK {
+		utils.LogErrorf("HTTP %d from Musixmatch", resp.StatusCode)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: response body=%s", string(body)))
+		err := &utils.HTTPError{StatusCode: resp.StatusCode}
+		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("website lyrics page: response received body_bytes=%d", len(body))
@@ -63,8 +82,9 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	matches := nextDataRe.FindSubmatch(body)
 	if len(matches) < 2 {
 		utils.LogErrorf("website lyrics page: Next.js data not found body_bytes=%d", len(body))
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: response body=%s", string(body)))
 		err := fmt.Errorf("could not find __NEXT_DATA__ on page")
-		failure := utils.NewLookupFailure("lyrics_page_next_data_missing", "website", err)
+		failure := utils.NewLookupFailure("lyrics_page_next_data_missing", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("website lyrics page: Next.js data found bytes=%d", len(matches[1]))
@@ -72,11 +92,16 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	var data nextDataResponse
 	if err := json.Unmarshal(matches[1], &data); err != nil {
 		utils.LogErrorf("website lyrics page: could not parse Next.js data bytes=%d error=%v", len(matches[1]), err)
-		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err)
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: Next.js data=%s", string(matches[1])))
+		failure := utils.NewLookupFailure("lyrics_page_json_parse_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
 	trackData := data.Props.PageProps.Data.TrackInfo.Data
+	// Checking the album is not a good idea since the album could be a compilation or a different edition, so we will not check it for now.
+	// if err := validateMatchedIdentity(input, trackMetadata{Artist: trackData.Track.ArtistName, Album: trackData.Track.AlbumName}, "website lyrics page"); err != nil {
+	// 	return lyrics.GetLyricsResponse{}, err, nil, nil
+	// }
 	lang := trackData.Lyrics.Language
 	structureLines := 0
 	for _, section := range trackData.TrackStructureList {
@@ -86,6 +111,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 
 	// Check for synced lyrics
 	if len(trackData.TrackStructureList) > 0 {
+		utils.LogInfof("website lyrics page: trying source=track_structure")
 		lrc := buildLRCForTrackStructure(trackData.TrackStructureList)
 		if lrc != "" {
 			utils.LogInfof("website lyrics page: got synced lyrics source=track_structure lrc_lines=%d", strings.Count(lrc, "\n"))
@@ -96,7 +122,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 		}
 	}
 	if len(trackData.Subtitle) > 0 {
-		utils.LogInfof("website lyrics page: trying subtitle fallback")
+		utils.LogInfof("website lyrics page: trying source=subtitle")
 		lrc := buildLRCForSubtitle(trackData.Subtitle)
 		if lrc != "" {
 			utils.LogInfof("website lyrics page: got synced lyrics source=subtitle lrc_lines=%d", strings.Count(lrc, "\n"))
@@ -113,7 +139,7 @@ func scrapeWebsiteLyricsForTrack(track *Song) (lyrics.GetLyricsResponse, error, 
 	lyricsBody := trackData.Lyrics.Body
 	if lyricsBody == "" {
 		utils.LogErrorf("website lyrics page: plain lyrics unavailable because body was empty")
-		failure := utils.NewLookupFailure("lyrics_empty", "website", err)
+		failure := utils.NewLookupFailure("lyrics_empty", "website", err).WithPhase("website_lyrics")
 		err = fmt.Errorf("body is empty")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}

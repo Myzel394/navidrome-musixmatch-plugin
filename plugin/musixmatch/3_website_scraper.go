@@ -98,9 +98,10 @@ func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (ly
 	}
 
 	trackData := data.Props.PageProps.Data.TrackInfo.Data
-	if err := validateMatchedIdentity(input, trackMetadata{Artist: trackData.Track.ArtistName, Album: trackData.Track.AlbumName}, "website lyrics page"); err != nil {
-		return lyrics.GetLyricsResponse{}, err, nil, nil
-	}
+	// Checking the album is not a good idea since the album could be a compilation or a different edition, so we will not check it for now.
+	// if err := validateMatchedIdentity(input, trackMetadata{Artist: trackData.Track.ArtistName, Album: trackData.Track.AlbumName}, "website lyrics page"); err != nil {
+	// 	return lyrics.GetLyricsResponse{}, err, nil, nil
+	// }
 	lang := trackData.Lyrics.Language
 	structureLines := 0
 	for _, section := range trackData.TrackStructureList {

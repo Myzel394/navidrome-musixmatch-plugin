@@ -50,11 +50,11 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	}
 	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
-	meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
-	if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
-		utils.LogInfof("desktop API: matched metadata rejected, falling back to website")
-		return lyrics.GetLyricsResponse{}, nil, nil, nil
-	}
+	// meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
+	// if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
+	// 	utils.LogInfof("desktop API: matched metadata rejected, falling back to website")
+	// 	return lyrics.GetLyricsResponse{}, nil, nil, nil
+	// }
 
 	if resp, ok := lyricsFromDesktopRichsync(body.MacroCalls["track.richsync.get"]); ok {
 		utils.LogInfof("desktop API: selected lyrics representation=richsync")

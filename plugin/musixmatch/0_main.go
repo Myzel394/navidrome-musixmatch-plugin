@@ -1,15 +1,17 @@
 package musixmatch
 
 import (
+	"fmt"
+
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
+	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 type Song struct {
 	Artist              string
 	Title               string
 	CommontrackVanityID string
-	_albumCheckRequired bool
 }
 
 // Return error whenever a lyrics could not be fetched.
@@ -34,7 +36,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 	}
 
 	// Fallback, scrape website
-	track, err, failure := searchForTrack(input)
+	tracks, err, failure := searchForTracks(input)
 	if err != nil {
 		status := 0
 		reason := ""
@@ -46,9 +48,28 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
-	if track != nil {
+	if len(tracks) > 0 {
 		utils.LogInfof("FetchLyrics: website search match_found")
-		return scrapeWebsiteLyricsForTrack(track, input)
+		var lastFailure *utils.LookupFailure
+		for _, track := range tracks {
+			pdk.Log(pdk.LogDebug, fmt.Sprintf("FetchLyrics: website candidate found artist=%s title=%s album=%s mbz=%s", track.Artist, track.Title, track.CommontrackVanityID, input.Track.MBZRecordingID))
+			resp, err, failure, success := scrapeWebsiteLyricsForTrack(track, input)
+			if isIdentityRejection(err) {
+				utils.LogInfof("FetchLyrics: website candidate rejected reason=%s", err.Error())
+				continue
+			}
+			if err != nil {
+				return resp, err, failure, success
+			}
+			if len(resp.Lyrics) > 0 {
+				utils.LogInfof("FetchLyrics: website candidate accepted source=website category=%s", success.CategoryValue())
+				return resp, nil, nil, success
+			}
+			lastFailure = failure
+		}
+
+		utils.LogInfof("FetchLyrics: Could not find any lyrics for any of the candidate tracks, returning last failure")
+		return lyrics.GetLyricsResponse{}, nil, lastFailure, nil
 	}
 
 	utils.LogInfof("FetchLyrics: website search no_match_found")

@@ -12,55 +12,61 @@ import (
 
 var doMusixmatchWebsiteSearchGetRequest = utils.DoMusixmatchWebsiteGetRequest
 
-// Search for a specific track.
-// This function tries different methods to find the track on Musixmatch.
-// It first tries to search using the normalized artist and title, then using the raw artist and title, and finally using only the raw title.
-// If a match is found only by raw title, `_albumCheckRequired` is set to true, indicating that the album should be checked against the
-// one on the lyrics page to ensure the correct track is selected.
-func searchForTrack(input lyrics.GetLyricsRequest) (*Song, error, *utils.LookupFailure) {
+func searchForTracks(input lyrics.GetLyricsRequest) ([]*Song, error, *utils.LookupFailure) {
 	normArtist := normalize(input.Track.Artist)
 	normTitle := normalize(input.Track.Title)
+	candidateLimit := utils.ConfigMaxWebsiteCandidateAttempts()
+	candidates := make([]*Song, 0, candidateLimit)
+	seen := map[string]bool{}
 
 	utils.LogInfof("website search: started artist_present=%t title_present=%t", normArtist != "", normTitle != "")
+	utils.LogInfof("website search: searching using normalized artist and title artist=%s title=%s", normArtist, normTitle)
+	// Normalized search
 	if normArtist != "" && normTitle != "" {
-		track, err, failure := _searchForQuery(normArtist + " " + normTitle)
+		tracks, err, failure := _searchForQuery(normArtist+" "+normTitle, "artist_title", input)
 		if err != nil || failure != nil {
 			return nil, err, failure
 		}
-		if track != nil {
-			return track, nil, nil
-		}
+		candidates = appendWebsiteCandidates(candidates, seen, tracks)
+	}
+	utils.LogInfof("website search: got %d candidates now", len(candidates))
+	if len(candidates) >= candidateLimit {
+		return candidates, nil, nil
 	}
 
+	utils.LogInfof("website search: searching using raw artist and title artist=%s title=%s", input.Track.Artist, input.Track.Title)
 	rawArtist := collapseSearchWhitespace(input.Track.Artist)
 	rawTitle := collapseSearchWhitespace(input.Track.Title)
 	if rawArtist != "" && rawTitle != "" {
-		track, err, failure := _searchForQuery(rawArtist + " " + rawTitle)
+		tracks, err, failure := _searchForQuery(rawArtist+" "+rawTitle, "artist_title", input)
 		if err != nil || failure != nil {
 			return nil, err, failure
 		}
-		if track != nil {
-			return track, nil, nil
-		}
+		candidates = appendWebsiteCandidates(candidates, seen, tracks)
 	}
+	utils.LogInfof("website search: got %d candidates now", len(candidates))
+	if len(candidates) >= candidateLimit {
+		return candidates, nil, nil
+	}
+
+	utils.LogInfof("website search: searching using raw artist only artist=%s", input.Track.Artist)
 	if rawTitle != "" {
-		track, err, failure := _searchForQuery(rawTitle)
+		tracks, err, failure := _searchForQuery(rawTitle, "title_only", input)
 		if err != nil || failure != nil {
 			return nil, err, failure
 		}
-		if track != nil && validStrictSimilarity(input.Track.Artist, track.Artist) {
-			track._albumCheckRequired = true
-			return track, nil, nil
-		}
+		candidates = appendWebsiteCandidates(candidates, seen, tracks)
+	}
+	utils.LogInfof("website search: got %d candidates now", len(candidates))
+	if len(candidates) > 0 {
+		return candidates, nil, nil
 	}
 
 	utils.LogInfof("website search: no_match_found after all attempts")
-	err := fmt.Errorf("no Musixmatch search results")
-	failure := utils.NewLookupFailure("search_no_match", "website", err).WithPhase("website_search")
-	return nil, err, failure
+	return nil, nil, nil
 }
 
-func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
+func _searchForQuery(query, mode string, input lyrics.GetLyricsRequest) ([]*Song, error, *utils.LookupFailure) {
 	endpoint := fmt.Sprintf(utils.MusixmatchSearchPageURL, url.QueryEscape(query))
 	utils.LogInfof("website search: query attempt query_chars=%d", len(query))
 
@@ -108,13 +114,10 @@ func _searchForQuery(query string) (*Song, error, *utils.LookupFailure) {
 
 	if bestMatchIsTrack {
 		utils.LogInfof("website search: match_found using best match")
-		return songFromSearchTrack(searchResponse.BestMatch), nil, nil
 	}
-	if len(searchResponse.Tracks) > 0 {
-		utils.LogInfof("website search: match_found using first result")
-		return songFromSearchTrack(&searchResponse.Tracks[0]), nil, nil
+	tracks := orderWebsiteCandidates(searchResponse.BestMatch, searchResponse.Tracks, mode, input)
+	if len(tracks) == 0 {
+		utils.LogInfof("website search: no_match_found because results were empty best_match_present=%t best_match_is_track=%t", searchResponse.BestMatch != nil, bestMatchIsTrack)
 	}
-
-	utils.LogInfof("website search: no_match_found because results were empty best_match_present=%t best_match_is_track=%t", searchResponse.BestMatch != nil, bestMatchIsTrack)
-	return nil, nil, nil
+	return tracks, nil, nil
 }

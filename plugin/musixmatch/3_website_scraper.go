@@ -36,7 +36,8 @@ type nextDataResponse struct {
 				TrackInfo struct {
 					Data struct {
 						Track struct {
-							AlbumName string `json:"albumName"`
+							AlbumName  string `json:"albumName"`
+							ArtistName string `json:"artistName"`
 						} `json:"track"`
 						Lyrics struct {
 							Body     string `json:"body"`
@@ -97,9 +98,7 @@ func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (ly
 	}
 
 	trackData := data.Props.PageProps.Data.TrackInfo.Data
-	if track._albumCheckRequired && !validStrictSimilarity(input.Track.Album, trackData.Track.AlbumName) {
-		utils.LogInfof("website lyrics page: album_not_similar_enough, rejecting lyrics; requested_album=%s actual_album=%s", input.Track.Album, trackData.Track.AlbumName)
-		err := fmt.Errorf("requested album and candidate album are not similar enough requested_album=%s actual_album=%s", input.Track.Album, trackData.Track.AlbumName)
+	if err := validateMatchedIdentity(input, trackMetadata{Artist: trackData.Track.ArtistName, Album: trackData.Track.AlbumName}, "website lyrics page"); err != nil {
 		return lyrics.GetLyricsResponse{}, err, nil, nil
 	}
 	lang := trackData.Lyrics.Language

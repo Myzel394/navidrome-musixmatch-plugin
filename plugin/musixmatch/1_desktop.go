@@ -50,6 +50,12 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	}
 	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
+	meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
+	if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
+		utils.LogInfof("desktop API: matched metadata rejected, falling back to website")
+		return lyrics.GetLyricsResponse{}, nil, nil, nil
+	}
+
 	if resp, ok := lyricsFromDesktopRichsync(body.MacroCalls["track.richsync.get"]); ok {
 		utils.LogInfof("desktop API: selected lyrics representation=richsync")
 		success := utils.NewLookupSuccess("desktop_synced")
@@ -70,4 +76,16 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	err = fmt.Errorf(desktopFallbackErr)
 	failure = utils.NewLookupFailure("desktop_no_lyrics", "desktop_api", err).WithPhase("desktop_lyrics")
 	return lyrics.GetLyricsResponse{}, err, failure, nil
+}
+
+func desktopMatchedMetadata(call desktopResponse) trackMetadata {
+	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
+		return trackMetadata{}
+	}
+	var body desktopTrackBody
+	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
+		utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(call.Message.Body))
+		return trackMetadata{}
+	}
+	return trackMetadata{Artist: body.Track.ArtistName, Album: body.Track.AlbumName}
 }

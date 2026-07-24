@@ -46,6 +46,14 @@
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
         },
+        "max_website_candidate_attempts": {
+          "type": "integer",
+          "title": "Max Website Candidate Attempts",
+          "default": 3,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum number of unique Musixmatch website lyric pages to fetch and validate per lookup before returning no verified website lyrics."
+        },
         "analytics_info": {
           "type": "string",
           "title": "Analytics info",
@@ -122,6 +130,10 @@
             {
               "type": "Control",
               "scope": "#/properties/musixmatch_http_accept"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/max_website_candidate_attempts"
             }
           ]
         }

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
@@ -26,6 +27,18 @@ func getConfigBool(key string, def bool) bool {
 	return b
 }
 
+func getConfigInt(key string, def int) int {
+	v, ok := pdk.GetConfig(key)
+	if !ok || strings.TrimSpace(v) == "" {
+		return def
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return def
+	}
+	return i
+}
+
 func ConfigUserToken() string {
 	v, _ := pdk.GetConfig(ConfigKeyUserToken)
 	return v
@@ -42,6 +55,14 @@ func ConfigSearchHTTPAcceptHeader() string {
 func ConfigCaptchaID() string {
 	v, _ := pdk.GetConfig(ConfigKeyCaptchaID)
 	return v
+}
+
+func ConfigMaxWebsiteCandidateAttempts() int {
+	attempts := getConfigInt(ConfigKeyMaxWebsiteCandidateAttempts, DefaultMaxWebsiteCandidateAttempts)
+	if attempts < MinWebsiteCandidateAttempts || attempts > MaxWebsiteCandidateAttempts {
+		return DefaultMaxWebsiteCandidateAttempts
+	}
+	return attempts
 }
 
 func ConfigShareErrors() bool {

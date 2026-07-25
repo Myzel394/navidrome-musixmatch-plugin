@@ -18,7 +18,7 @@ jobs:
         run: |
           set -euo pipefail
           apt-get update
-          apt-get install -y --no-install-recommends git ca-certificates xz-utils
+          apt-get install -y --no-install-recommends bash curl git ca-certificates sudo tar xz-utils
 
       - name: Checkout repository
         uses: https://github.com/actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
@@ -28,23 +28,46 @@ jobs:
           persist-credentials: false
 
       - name: Install Nix
-        uses: https://github.com/cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        shell: bash
         env:
           FORGEJO_TOKEN: ""
           GITHUB_TOKEN: ""
-        with:
-          install_options: --no-daemon
-          extra_nix_config: |
-            experimental-features = nix-command flakes
+        run: |
+          set -euo pipefail
+
+          # The node-lts container runs this job as root, but the official
+          # no-daemon Nix installer is a single-user install and rejects root.
+          # Create a dedicated non-root user and install Nix into that account.
+          useradd --create-home --shell /bin/bash builder
+          mkdir -p /nix
+          chown builder:builder /nix
+
+          sudo -H -u builder env HOME=/home/builder USER=builder bash -lc '
+            set -euo pipefail
+            curl --fail --location https://nixos.org/nix/install | sh -s -- --no-daemon
+            mkdir -p "$HOME/.config/nix"
+            printf "%s\n" "experimental-features = nix-command flakes" > "$HOME/.config/nix/nix.conf"
+          '
 
       - name: Build release package
         shell: bash
         env:
+          FORGEJO_TOKEN: ""
+          GITHUB_TOKEN: ""
           OPENOBSERVE_AUTH_TOKEN: ${{ secrets.OPENOBSERVE_AUTH_TOKEN }}
           OPENOBSERVE_PLUGIN_SOURCE: forgejo-git.nerdvpn.de
         run: |
           set -euo pipefail
-          nix develop --impure -c just create-prod-release
+
+          # Build as the same non-root user that owns the single-user Nix
+          # install. Later root/Node steps can still read the generated asset.
+          chown -R builder:builder "$PWD"
+          sudo -H -u builder env \
+            HOME=/home/builder \
+            USER=builder \
+            OPENOBSERVE_AUTH_TOKEN="$OPENOBSERVE_AUTH_TOKEN" \
+            OPENOBSERVE_PLUGIN_SOURCE="$OPENOBSERVE_PLUGIN_SOURCE" \
+            bash -lc '. "$HOME/.nix-profile/etc/profile.d/nix.sh"; nix develop --impure -c just create-prod-release'
           test -f result/bin/navidrome-musixmatch-plugin.ndp
 
       - name: Generate Forgejo release

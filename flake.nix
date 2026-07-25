@@ -18,7 +18,11 @@
         version = "0.3.4";
         pkgs = import nixpkgs { inherit system; };
         openObserveAuthToken = builtins.getEnv "OPENOBSERVE_AUTH_TOKEN";
-        openObservePluginSource = "github";
+        openObservePluginSource =
+          let
+            value = builtins.getEnv "OPENOBSERVE_PLUGIN_SOURCE";
+          in
+          if value == "" then "unknown" else value;
         openObserveLDFlags = pkgs.lib.escapeShellArg (
           "-X github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils.OpenObserveAuthToken=${openObserveAuthToken} "
           + "-X github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils.OpenObserveAttributePluginSource=${openObservePluginSource} "

@@ -1,0 +1,71 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+env:
+  NIX_CONFIG: experimental-features = nix-command flakes
+
+jobs:
+  release:
+    runs-on: node24
+    steps:
+      - name: Install checkout prerequisites
+        shell: bash
+        run: |
+          set -euo pipefail
+          apt-get update
+          apt-get install -y --no-install-recommends git ca-certificates xz-utils
+
+      - name: Checkout repository
+        uses: https://github.com/actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
+        with:
+          fetch-depth: 0
+          token: ${{ forgejo.token }}
+          persist-credentials: false
+
+      - name: Install Nix
+        uses: https://github.com/cachix/install-nix-action@8aa03977d8d733052d78f4e008a241fd1dbf36b3 # v31.10.6
+        env:
+          FORGEJO_TOKEN: ""
+          GITHUB_TOKEN: ""
+        with:
+          install_options: --no-daemon
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Build release package
+        shell: bash
+        env:
+          OPENOBSERVE_AUTH_TOKEN: ${{ secrets.OPENOBSERVE_AUTH_TOKEN }}
+          OPENOBSERVE_PLUGIN_SOURCE: forgejo-git.nerdvpn.de
+        run: |
+          set -euo pipefail
+          nix develop --impure -c just create-prod-release
+          test -f result/bin/navidrome-musixmatch-plugin.ndp
+
+      - name: Generate Forgejo release
+        shell: bash
+        env:
+          FORGEJO_TOKEN: ${{ forgejo.token }}
+          FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
+          FORGEJO_REPOSITORY: ${{ forgejo.repository }}
+          FORGEJO_REF_NAME: ${{ forgejo.ref_name }}
+        run: |
+          set -euo pipefail
+          node .forgejo/scripts/generate-release.mjs .forgejo-release-id
+
+      - name: Upload release asset
+        shell: bash
+        env:
+          FORGEJO_TOKEN: ${{ forgejo.token }}
+          FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
+          FORGEJO_REPOSITORY: ${{ forgejo.repository }}
+        run: |
+          set -euo pipefail
+          node .forgejo/scripts/upload-release-asset.mjs \
+            .forgejo-release-id \
+            result/bin/navidrome-musixmatch-plugin.ndp \
+            navidrome-musixmatch-plugin.ndp

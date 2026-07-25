@@ -23,6 +23,7 @@ jobs:
       - name: Checkout repository
         uses: https://github.com/actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.0
         with:
+          ref: ${{ forgejo.ref }}
           fetch-depth: 0
           token: ${{ forgejo.token }}
           persist-credentials: false
@@ -79,6 +80,9 @@ jobs:
           FORGEJO_REF_NAME: ${{ forgejo.ref_name }}
         run: |
           set -euo pipefail
+          # The build changes checkout ownership to builder; allow this root
+          # step to read its tag history when creating release notes.
+          git config --global --add safe.directory "$PWD"
           node .forgejo/scripts/generate-release.mjs .forgejo-release-id
 
       - name: Upload release asset

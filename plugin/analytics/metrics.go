@@ -23,17 +23,17 @@ func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) 
 
 	now := time.Now().UTC().Unix()
 	base := metricRecord{
-		"plugin.name":                      utils.PluginName,
-		"plugin.version":                   utils.OpenObserveAttributeVersion,
-		"plugin.source":                    utils.OpenObserveAttributePluginSource,
-		"track.has_artist":                 input.Track.Artist != "",
-		"track.has_album":                  input.Track.Album != "",
-		"track.has_title":                  input.Track.Title != "",
-		"track.has_mzb_recording_id":       input.Track.MBZRecordingID != "",
-		"config.has_musixmatch_user_token": utils.ConfigUserToken() != "",
-		"schema.version":                   analyticsSchemaVersion,
-		"result":                           result,
-		"_timestamp":                       now,
+		"plugin_name":                utils.PluginName,
+		"plugin_version":             utils.OpenObserveAttributeVersion,
+		"plugin_source":              utils.OpenObserveAttributePluginSource,
+		"track_has_artist":           input.Track.Artist != "",
+		"track_has_album":            input.Track.Album != "",
+		"track_has_title":            input.Track.Title != "",
+		"track_has_mzb_recording_id": input.Track.MBZRecordingID != "",
+		"has_musixmatch_user_token":  utils.ConfigUserToken() != "",
+		"schema.version":             analyticsSchemaVersion,
+		"result":                     result,
+		"_timestamp":                 now,
 	}
 
 	if lookup.success() {

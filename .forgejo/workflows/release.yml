@@ -32,7 +32,6 @@ jobs:
         shell: bash
         env:
           FORGEJO_TOKEN: ""
-          GITHUB_TOKEN: ""
         run: |
           set -euo pipefail
 
@@ -54,7 +53,6 @@ jobs:
         shell: bash
         env:
           FORGEJO_TOKEN: ""
-          GITHUB_TOKEN: ""
           OPENOBSERVE_AUTH_TOKEN: ${{ secrets.OPENOBSERVE_AUTH_TOKEN }}
           OPENOBSERVE_PLUGIN_SOURCE: forgejo-git.nerdvpn.de
         run: |

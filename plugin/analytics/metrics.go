@@ -23,16 +23,17 @@ func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) 
 
 	now := time.Now().UTC().Unix()
 	base := metricRecord{
-		"plugin":                     utils.PluginName,
-		"plugin_version":             utils.OpenObserveAttributeVersion,
-		"has_musixmatch_user_token":  utils.ConfigUserToken() != "",
-		"track.has_artist":           input.Track.Artist != "",
-		"track.has_album":            input.Track.Album != "",
-		"track.has_title":            input.Track.Title != "",
-		"track.has_mzb_recording_id": input.Track.MBZRecordingID != "",
-		"schema_version":             analyticsSchemaVersion,
-		"result":                     result,
-		"_timestamp":                 now,
+		"plugin.name":                      utils.PluginName,
+		"plugin.version":                   utils.OpenObserveAttributeVersion,
+		"plugin.source":                    utils.OpenObserveAttributePluginSource,
+		"track.has_artist":                 input.Track.Artist != "",
+		"track.has_album":                  input.Track.Album != "",
+		"track.has_title":                  input.Track.Title != "",
+		"track.has_mzb_recording_id":       input.Track.MBZRecordingID != "",
+		"config.has_musixmatch_user_token": utils.ConfigUserToken() != "",
+		"schema.version":                   analyticsSchemaVersion,
+		"result":                           result,
+		"_timestamp":                       now,
 	}
 
 	if lookup.success() {
@@ -40,9 +41,10 @@ func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) 
 	} else {
 		failure := lookup.lookupFailure()
 		base["failure_reason"] = failure.ReasonValue()
+		base["failure_phase"] = failure.PhaseValue()
+		base["failure_status"] = failure.StatusCodeValue()
+
 		base["source"] = failure.SourceValue()
-		base["phase"] = failure.PhaseValue()
-		base["status"] = failure.StatusCodeValue()
 	}
 
 	metrics := []metricRecord{

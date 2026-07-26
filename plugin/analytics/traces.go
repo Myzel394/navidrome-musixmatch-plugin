@@ -42,7 +42,7 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 
 			otlpStringAttr("plugin.source", utils.OpenObserveAttributePluginSource),
 			otlpStringAttr("plugin.version", utils.OpenObserveAttributeVersion),
-			otlpStringAttr("service.version", utils.OpenObserveAttributeVersion),
+			otlpStringAttr("plugin.name", utils.PluginName),
 		},
 		Events: failureLogEvents(lookup.Logs),
 		Status: otlpStatus{Code: 2, Message: failureMessage},

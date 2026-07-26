@@ -74,7 +74,7 @@ jobs:
       - name: Generate Forgejo release
         shell: bash
         env:
-          FORGEJO_TOKEN: ${{ forgejo.token }}
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_RELEASE_TOKEN }}
           FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
           FORGEJO_REPOSITORY: ${{ forgejo.repository }}
           FORGEJO_REF_NAME: ${{ forgejo.ref_name }}
@@ -88,7 +88,7 @@ jobs:
       - name: Upload release asset
         shell: bash
         env:
-          FORGEJO_TOKEN: ${{ forgejo.token }}
+          FORGEJO_TOKEN: ${{ secrets.FORGEJO_RELEASE_TOKEN }}
           FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
           FORGEJO_REPOSITORY: ${{ forgejo.repository }}
         run: |

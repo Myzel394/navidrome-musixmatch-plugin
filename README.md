@@ -11,6 +11,15 @@ Fetches lyrics from Musixmatch, the official lyrics provider for Spotify. The pl
 
 No Musixmatch settings are required for the desktop API path.
 
+### Which release should I use?
+
+You can download this plugin from [GitHub](https://github.com/Myzel394/navidrome-musixmatch-plugin) or from the [Forgejo mirror](https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin).
+
+Most development happens on GitHub, but both repositories are kept available so you can use whichever platform you prefer and report issues there.
+GitHub releases are built with GitHub Actions. Forgejo releases are built by my own self-hosted Forgejo runner.
+
+If you are unsure which one to choose, I recommend the [Forgejo releases](https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin/releases), as they are built on my own runner and are therefore fully under my control.
+
 ## Optional Website Fallback
 
 If the desktop API cannot find lyrics or is blocked, website scraping is supported as a fallback. This fallback requires a Musixmatch website token. If no token is configured, the fallback is skipped.

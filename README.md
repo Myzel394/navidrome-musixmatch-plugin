@@ -52,3 +52,11 @@ Before opening an [issue](https://github.com/Myzel394/navidrome-musixmatch-plugi
 ```sh
 grep navidrome-musixmatch-plugin /path/to/navidrome.log
 ```
+
+## Related Plugins
+
+I can highly recommend to install my other lyrics plugins as well to get the best lyrics coverage as possible:
+
+* [navidrome-shazam-plugin](https://github.com/Myzel394/navidrome-shazam-plugin)
+* [navidrome-lyricstranslate-plugin](https://github.com/Myzel394/navidrome-lyricstranslate-plugin)
+

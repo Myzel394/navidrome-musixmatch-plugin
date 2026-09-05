@@ -12,7 +12,7 @@ import (
 func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
 	utils.LogInfof("desktop API: lookup started duration_filter=%t", input.Track.Duration > 0)
 
-	token, err, failure := desktopUserToken()
+	token, guid, err, failure := desktopUserToken()
 	if err != nil {
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
@@ -20,7 +20,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	query := desktopLyricsQuery(input, token)
 
 	var resp desktopResponse
-	err = desktopGet("macro.subtitles.get", query, &resp)
+	err = desktopGet("macro.subtitles.get", query, guid, &resp)
 	if err != nil {
 		utils.LogErrorf("desktop API: lyrics request failed error=%v", err)
 		failure := utils.NewLookupFailure("desktop_macro_request_failed", "desktop_api", err).WithPhase("desktop_lyrics")

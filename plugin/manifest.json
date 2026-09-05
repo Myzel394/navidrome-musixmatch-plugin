@@ -1,14 +1,14 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
     "http": {
       "reason": "To search and fetch lyrics from Musixmatch, and to send opt-in analytics to the maintainer's OpenObserve instance",
       "requiredHosts": [
-        "apic-desktop.musixmatch.com",
+        "apic-appmobile.musixmatch.com",
         "bugs.myzel394.app",
         "www.musixmatch.com"
       ]

@@ -5,8 +5,9 @@ import (
 )
 
 const (
-	desktopAppID       = "web-desktop-app-v1.0"
-	desktopUserAgent   = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.183 Safari/537.36"
+	desktopAppID       = "mac-ios-v2.0"
+	desktopAppVersion  = "10.1.1"
+	desktopClientID    = "Musixmatch/2025120901 CFNetwork/3860.300.31 Darwin/25.2.0"
 	desktopAPISuccess  = 200
 	desktopAPIBlocked  = 401
 	desktopFallbackErr = "desktop API did not return lyrics"

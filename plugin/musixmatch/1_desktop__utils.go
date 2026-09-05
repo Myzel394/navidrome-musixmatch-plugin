@@ -28,12 +28,12 @@ func desktopLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values 
 	return query
 }
 
-func desktopGet(action string, query url.Values, out any) error {
+func desktopGet(action string, query url.Values, guid string, out any) error {
 	query.Set("app_id", desktopAppID)
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
 
 	endpoint := fmt.Sprintf(utils.MusixmatchDesktopAPIURL, action) + "?" + query.Encode()
-	body, err := _doDesktopGetRequest(endpoint)
+	body, err := _doDesktopGetRequest(endpoint, guid)
 	if err != nil {
 		return err
 	}
@@ -43,16 +43,25 @@ func desktopGet(action string, query url.Values, out any) error {
 	return nil
 }
 
-func _doDesktopGetRequest(endpoint string) ([]byte, error) {
+func _doDesktopGetRequest(endpoint string, guid string) ([]byte, error) {
 	req := pdk.NewHTTPRequest(pdk.MethodGet, endpoint)
-	req.SetHeader("Accept", "application/json")
-	req.SetHeader("Accept-Language", "en")
-	req.SetHeader("Cookie", "AWSELBCORS=0; AWSELB=0")
-	req.SetHeader("User-Agent", desktopUserAgent)
+	for key, value := range desktopAPIHeaders(guid) {
+		req.SetHeader(key, value)
+	}
 
 	resp := req.Send()
 	if resp.Status() != utils.HTTPStatusOK {
 		return resp.Body(), &utils.HTTPError{StatusCode: int(resp.Status())}
 	}
 	return resp.Body(), nil
+}
+
+func desktopAPIHeaders(guid string) map[string]string {
+	return map[string]string{
+		"Accept":            "application/json",
+		"Accept-Language":   "en-US,en;q=0.9",
+		"X-Cookie":          "x-mxm-token-guid=" + guid,
+		"x-mxm-app-version": desktopAppVersion,
+		"X-User-Agent":      desktopClientID,
+	}
 }

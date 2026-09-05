@@ -25,7 +25,7 @@ const (
 const (
 	MusixmatchSearchPageURL = "https://www.musixmatch.com/search?query=%s"
 	MusixmatchFetchPageURL  = "https://www.musixmatch.com/lyrics/%s"
-	MusixmatchDesktopAPIURL = "https://apic-desktop.musixmatch.com/ws/1.1/%s"
+	MusixmatchDesktopAPIURL = "https://apic-appmobile.musixmatch.com/ws/1.1/%s"
 )
 
 const (

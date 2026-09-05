@@ -55,10 +55,16 @@ func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 func mockDesktopAPI(t *testing.T) {
 	t.Helper()
 
-	tokenBody := mustGetDesktopTokenBody(t)
-	macroBody := mustGetDesktopMacroBody(t, tokenBody)
+	guid := newDesktopInstallGUID()
+	if guid == "" {
+		t.Fatal("could not generate install guid")
+	}
+	tokenBody := mustGetDesktopTokenBody(t, guid)
+	macroBody := mustGetDesktopMacroBody(t, tokenBody, guid)
 
 	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Once()
+	host.CacheMock.On("GetString", desktopGUIDCache).Return("", false, nil).Once()
+	host.CacheMock.On("SetString", desktopGUIDCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Once()
 	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Once()
 	pdk.PDKMock.On("Log", mock.Anything, mock.Anything).Return()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
@@ -78,18 +84,18 @@ func mockDesktopAPI(t *testing.T) {
 	})
 }
 
-func mustGetDesktopTokenBody(t *testing.T) []byte {
+func mustGetDesktopTokenBody(t *testing.T, guid string) []byte {
 	t.Helper()
 
-	query := "app_id=" + desktopAppID + "&user_language=en&t=" + strconv.FormatInt(time.Now().UnixMilli(), 10)
-	body, err := realDesktopGetRequest(fmt.Sprintf(utils.MusixmatchDesktopAPIURL, "token.get") + "?" + query)
+	query := "app_id=" + desktopAppID + "&user_language=en&guid=" + guid + "&t=" + strconv.FormatInt(time.Now().UnixMilli(), 10)
+	body, err := realDesktopGetRequest(fmt.Sprintf(utils.MusixmatchDesktopAPIURL, "token.get")+"?"+query, guid)
 	if err != nil {
 		t.Fatalf("failed to fetch desktop token fixture: %v", err)
 	}
 	return body
 }
 
-func mustGetDesktopMacroBody(t *testing.T, tokenBody []byte) []byte {
+func mustGetDesktopMacroBody(t *testing.T, tokenBody []byte, guid string) []byte {
 	t.Helper()
 
 	var tokenResp desktopResponse
@@ -118,23 +124,22 @@ func mustGetDesktopMacroBody(t *testing.T, tokenBody []byte) []byte {
 	query.Set("app_id", desktopAppID)
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
 
-	body, err := realDesktopGetRequest(fmt.Sprintf(utils.MusixmatchDesktopAPIURL, "macro.subtitles.get") + "?" + query.Encode())
+	body, err := realDesktopGetRequest(fmt.Sprintf(utils.MusixmatchDesktopAPIURL, "macro.subtitles.get")+"?"+query.Encode(), guid)
 	if err != nil {
 		t.Fatalf("failed to fetch desktop macro fixture: %v", err)
 	}
 	return body
 }
 
-func realDesktopGetRequest(endpoint string) ([]byte, error) {
+func realDesktopGetRequest(endpoint string, guid string) ([]byte, error) {
 	client := &http.Client{Timeout: 20 * time.Second}
 	req, err := http.NewRequest(http.MethodGet, endpoint, nil)
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Accept-Language", "en")
-	req.Header.Set("Cookie", "AWSELBCORS=0; AWSELB=0")
-	req.Header.Set("User-Agent", desktopUserAgent)
+	for key, value := range desktopAPIHeaders(guid) {
+		req.Header.Set(key, value)
+	}
 
 	resp, err := client.Do(req)
 	if err != nil {

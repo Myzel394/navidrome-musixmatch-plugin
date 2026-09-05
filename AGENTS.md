@@ -13,7 +13,7 @@ Treat this file as the first source of project context. Search the codebase only
 - `plugin/lyrics.go` implements Navidrome's `GetLyrics` method and delegates to `plugin/musixmatch`.
 - `plugin/musixmatch/` contains Musixmatch-specific desktop API, website search/fetch fallback, normalization, and LRC conversion logic.
 - `plugin/utils/` contains shared config, logging, constants, and PDK HTTP helpers.
-- `plugin/manifest.json` defines Navidrome plugin metadata, HTTP permissions for `apic-desktop.musixmatch.com` and `www.musixmatch.com`, cache permission for the desktop API token, and plugin config schema.
+- `plugin/manifest.json` defines Navidrome plugin metadata, HTTP permissions for `apic-appmobile.musixmatch.com` and `www.musixmatch.com`, cache permission for the desktop API token, and plugin config schema.
 - `just/` and `justfile` define local build, test, install, and cleanup commands.
 - `flake.nix` defines the Nix dev shell and reproducible TinyGo/Nix package build.
 
@@ -34,7 +34,7 @@ Treat this file as the first source of project context. Search the codebase only
 
 ## Key Files
 
-- `plugin/musixmatch/1_desktop.go` implements the unofficial desktop API path at `apic-desktop.musixmatch.com/ws/1.1`, including 10-minute token caching and `macro.subtitles.get` parsing.
+- `plugin/musixmatch/1_desktop.go` implements the unofficial desktop API path at `apic-appmobile.musixmatch.com/ws/1.1`, including 10-minute token caching and `macro.subtitles.get` parsing.
 - `plugin/musixmatch/2_search.go` uses `MusixmatchSearchPageURL`, extracts the search page's `__NEXT_DATA__`, and parses `pageProps.data.openSearch.data.opensearchTrackSearch.body`.
 - `plugin/musixmatch/3_website_scraper.go` uses `nextDataRe` to parse the Musixmatch page and reads `props.pageProps.data.trackInfo.data`.
 - `plugin/musixmatch/4_website_scraper__lyrics_parser.go` converts Musixmatch timestamp totals into LRC tags like `[mm:ss.hh]`.
@@ -78,7 +78,7 @@ Validated during repository onboarding: `go test ./...` passes from `plugin/`, b
 ## Fragility And Gotchas
 
 - This uses an unofficial desktop API first and website scraping as fallback. Musixmatch can block requests, require captcha cookies on the website path, or change API/page/search JSON shapes without warning.
-- `MusixmatchDesktopAPIURL` uses the unofficial desktop endpoint with `app_id=web-desktop-app-v1.0`; if free lookups start failing, check this endpoint and token flow first.
+- `MusixmatchDesktopAPIURL` uses the appmobile endpoint with `app_id=mac-ios-v2.0` and mobile client headers; Musixmatch serves scrambled lyrics to clients it does not recognize, so if free lookups return gibberish, check the host, app id, and headers against a current spicetify/pear-desktop implementation first.
 - Website search parses embedded `__NEXT_DATA__` from `/search?query=...`; it requires a valid `musixmatchUserToken` cookie value and may redirect to auth without one.
 - Search result selection is permissive and does not verify returned artist/title equality after normalization.
 - `slugify` in `plugin/musixmatch/9_utils.go` appears unused.

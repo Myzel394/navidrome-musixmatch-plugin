@@ -27,14 +27,14 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("desktop API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == statusCodeAPIBlocked {
+	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		desktopInvalidateUserToken()
 		err := fmt.Errorf("desktop API returned 401 for lyrics request")
 		failure := utils.NewLookupFailure("desktop_macro_blocked", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
-	if resp.Message.Header.StatusCode != statusCodePISuccess {
+	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned status %d for lyrics request", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("desktop_macro_status", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
@@ -78,7 +78,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 }
 
 func desktopMatchedMetadata(call desktopResponse) trackMetadata {
-	if call.Message.Header.StatusCode != statusCodePISuccess || len(call.Message.Body) == 0 {
+	if call.Message.Header.StatusCode != utils.HTTPStatusOK || len(call.Message.Body) == 0 {
 		return trackMetadata{}
 	}
 	var body desktopTrackBody

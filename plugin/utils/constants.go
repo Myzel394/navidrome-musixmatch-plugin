@@ -2,7 +2,10 @@ package utils
 
 const PluginName = "navidrome-musixmatch-plugin"
 
-const HTTPStatusOK = 200
+const (
+	HTTPStatusOK      = 200
+	HTTPStatusBlocked = 401
+)
 
 const (
 	DefaultUserAgent                   = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1"
@@ -34,11 +37,6 @@ const (
 	OpenObserveOrg        = "default"
 	OpenObserveTraceURL   = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/v1/traces"
 	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
-)
-
-const (
-	statusCodePISuccess  = 200
-	statusCodeAPIBlocked = 401
 )
 
 var (

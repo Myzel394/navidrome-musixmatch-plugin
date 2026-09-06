@@ -22,7 +22,7 @@ func mobileUserToken() (string, error, *utils.LookupFailure) {
 		failure := utils.NewLookupFailure("mobile_token_request_failed", "mobile_api", err).WithPhase("mobile_token")
 		return "", err, failure
 	}
-	if resp.Message.Header.StatusCode != statusCodePISuccess {
+	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		err := fmt.Errorf("mobile API returned status %d while fetching token", resp.Message.Header.StatusCode)
 		return "", err, utils.NewLookupFailure("mobile_token_status", "mobile_api", err).WithPhase("mobile_token").WithStatusCode(resp.Message.Header.StatusCode)
 	}

@@ -83,7 +83,7 @@ func isCaptchaRedirect(location string) bool {
 // Check if the HTML body is probably an authentication page
 // Not a 100% guarantee
 func isHTMLProbablyAuthPage(body []byte) bool {
-	matches := nextDataRe.FindSubmatch(body)
+	matches := WEBSITE_NEXT_DATA_REGEX.FindSubmatch(body)
 	if len(matches) < 2 {
 		return false
 	}

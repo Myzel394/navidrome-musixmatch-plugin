@@ -90,7 +90,7 @@ func _searchForQuery(query, mode string, input lyrics.GetLyricsRequest) ([]*Song
 	}
 	utils.LogInfof("website search: response received body_bytes=%d", len(body))
 
-	matches := nextDataRe.FindSubmatch(body)
+	matches := WEBSITE_NEXT_DATA_REGEX.FindSubmatch(body)
 	if len(matches) < 2 {
 		utils.LogInfof("website search: failed to find musixmatch search Next.js data body_bytes=%d", len(body))
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: response body=%s", string(body)))

@@ -15,16 +15,16 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRe
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	var resp desktopResponse
-	if err := mobileGet("macro.subtitles.get", mobileLyricsQuery(input, token), &resp); err != nil {
+	if err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), &resp); err != nil {
 		failure := utils.NewLookupFailure("mobile_macro_request_failed", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("mobile API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == statusCodeAPIBlocked {
+	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
 		utils.LogInfof("mobile API: token invalidated after 401, retrying once")
 		return lyrics.GetLyricsResponse{}, fmt.Errorf("mobile API returned 401 for lyrics request"), utils.NewLookupFailure("mobile_blocked", "mobile_api", fmt.Errorf("mobile API returned 401 for lyrics request")).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode), nil
 	}
-	if resp.Message.Header.StatusCode != statusCodePISuccess {
+	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("mobile API returned status %d for lyrics request", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("mobile_macro_status", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode)

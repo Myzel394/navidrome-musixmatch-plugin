@@ -12,7 +12,7 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-func mobileLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values {
+func buildMobileLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Values {
 	q := url.Values{}
 	q.Set("format", "json")
 	q.Set("namespace", "lyrics_richsynched")

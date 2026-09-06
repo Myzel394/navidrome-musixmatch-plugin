@@ -50,6 +50,7 @@ Config keys come from `plugin/manifest.json` and `plugin/utils/constants.go`.
 - `musixmatch_captcha_id` is sent as the `captcha_id` cookie only when `musixmatch_user_token` is also set.
 - `musixmatch_user_agent` defaults to mobile Safari.
 - `musixmatch_http_accept` defaults to a browser-like HTML accept header.
+- `musixmatch_mobile_user_agent`, `musixmatch_mobile_app_version`, and `musixmatch_mobile_app_id` configure the mobile API identity headers/query values and default to the pinned appmobile identity.
 
 The desktop API path does not require user-entered Musixmatch cookies or an official API key. It automatically fetches an anonymous desktop `user_token` and caches it with Navidrome's `host.Cache*` service for 10 minutes. The manifest must keep the `cache` permission so Navidrome exports the required cache host functions.
 
@@ -99,3 +100,5 @@ This file follows the `AGENTS.md` convention: a root Markdown file that gives co
 ## Important gotchas
 
 Log stuff using `utils.LogInfof` / `utils.LogErrorf`. For sensitive data, such as the raw responses of HTTP requests, do not log them. Instead log the amount of bytes received. However, you can log the raw response in the Navidrome log using `pdk.Log(pdk.LogDebug, msg)`. This will not be sent to the server, but will be visible in the Navidrome log.
+
+Shared helpers should not accept a source string only to log context. Callers should own source-specific contextual logging around shared helper decisions.

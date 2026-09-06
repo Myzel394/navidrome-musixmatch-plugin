@@ -17,7 +17,7 @@ func mobileUserToken() (string, error, *utils.LookupFailure) {
 	}
 	query := url.Values{}
 	query.Set("user_language", "en")
-	var resp desktopResponse
+	var resp macroResponse
 	if err := mobileGet("token.get", query, &resp); err != nil {
 		failure := utils.NewLookupFailure("mobile_token_request_failed", "mobile_api", err).WithPhase("mobile_token")
 		return "", err, failure

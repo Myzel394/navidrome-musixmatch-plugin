@@ -27,7 +27,7 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	query := url.Values{}
 	query.Set("user_language", "en")
 
-	var resp desktopResponse
+	var resp macroResponse
 	err := desktopGet("token.get", query, &resp)
 	if err != nil {
 		utils.LogErrorf("desktop API: token request failed error=%v", err)

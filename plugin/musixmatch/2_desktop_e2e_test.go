@@ -91,41 +91,41 @@ func mockDesktopAPI(t *testing.T) {
 
 func mobileFirstMacroFixture(t *testing.T) []byte {
 	t.Helper()
-	macro := desktopMacroBody{MacroCalls: map[string]desktopResponse{}}
+	macro := macroBody{MacroCalls: map[string]macroResponse{}}
 	trackBody, _ := json.Marshal(map[string]any{"track": map[string]string{"track_name": "Birds of a Feather", "artist_name": "Billie Eilish", "album_name": ""}})
 	subtitleBody, _ := json.Marshal(map[string]any{"subtitle_list": []any{map[string]any{"subtitle": map[string]string{"subtitle_body": "[00:01.00]Birds of a feather\n[00:02.00]We should stick together\n", "subtitle_language": "en"}}}})
-	track := desktopResponse{}
+	track := macroResponse{}
 	track.Message.Header.StatusCode = utils.HTTPStatusOK
 	track.Message.Body = trackBody
-	subtitle := desktopResponse{}
+	subtitle := macroResponse{}
 	subtitle.Message.Header.StatusCode = utils.HTTPStatusOK
 	subtitle.Message.Body = subtitleBody
 	macro.MacroCalls["matcher.track.get"] = track
 	macro.MacroCalls["track.subtitles.get"] = subtitle
 	body, _ := json.Marshal(macro)
-	outer := desktopResponse{}
+	outer := macroResponse{}
 	outer.Message.Header.StatusCode = utils.HTTPStatusOK
 	outer.Message.Body = body
 	out, _ := json.Marshal(outer)
 	return out
 }
 
-func withMatchedTrackFixture(t *testing.T, macroBody []byte, title, artist, album string) []byte {
+func withMatchedTrackFixture(t *testing.T, macroFixture []byte, title, artist, album string) []byte {
 	t.Helper()
-	var outer desktopResponse
-	if err := json.Unmarshal(macroBody, &outer); err != nil {
+	var outer macroResponse
+	if err := json.Unmarshal(macroFixture, &outer); err != nil {
 		t.Fatalf("failed to parse macro fixture: %v", err)
 	}
-	var macro desktopMacroBody
+	var macro macroBody
 	if err := json.Unmarshal(outer.Message.Body, &macro); err != nil {
 		t.Fatalf("failed to parse macro body fixture: %v", err)
 	}
 	trackBody, _ := json.Marshal(map[string]any{"track": map[string]string{"track_name": title, "artist_name": artist, "album_name": album}})
-	call := desktopResponse{}
+	call := macroResponse{}
 	call.Message.Header.StatusCode = utils.HTTPStatusOK
 	call.Message.Body = trackBody
 	if macro.MacroCalls == nil {
-		macro.MacroCalls = map[string]desktopResponse{}
+		macro.MacroCalls = map[string]macroResponse{}
 	}
 	macro.MacroCalls["matcher.track.get"] = call
 	body, _ := json.Marshal(macro)
@@ -148,7 +148,7 @@ func mustGetDesktopTokenBody(t *testing.T) []byte {
 func mustGetDesktopMacroBody(t *testing.T, tokenBody []byte) []byte {
 	t.Helper()
 
-	var tokenResp desktopResponse
+	var tokenResp macroResponse
 	if err := json.Unmarshal(tokenBody, &tokenResp); err != nil {
 		t.Fatalf("failed to parse desktop token fixture: %v", err)
 	}

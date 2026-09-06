@@ -5,7 +5,6 @@ import (
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
-	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 type Song struct {
@@ -17,62 +16,55 @@ type Song struct {
 // Return error whenever a lyrics could not be fetched.
 // Return a failure only if the lookup failed due to a fixable error.
 // Some lyrics just don't exist, and we do not need a failure for that.
-func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	utils.LogInfof("FetchLyrics: lookup started for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
-	var desktopFailure *utils.LookupFailure
-	if resp, err, desktopFailure, success := fetchLyricsFromDesktopAPI(input); err == nil && len(resp.Lyrics) > 0 {
-		utils.LogInfof("FetchLyrics: lookup succeeded source=desktop_api category=%s", success.CategoryValue())
-		return resp, nil, nil, success
+func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess, string) {
+	mobileGUIDAssignment := chooseMobileGUIDAssignment()
+	var lastErr error
+	var lastFailure *utils.LookupFailure
+	// // // Mobile
+	utils.LogInfof("FetchLyrics: lookup started source=mobile_api artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
+	if resp, err, failure, success := fetchLyricsFromMobileAPI(input, mobileGUIDAssignment); err == nil && len(resp.Lyrics) > 0 {
+		utils.LogInfof("FetchLyrics: lookup succeeded source=mobile_api category=%s", success.CategoryValue())
+		return resp, nil, nil, success, mobileGUIDAssignment.Variant
 	} else if err != nil {
-		utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", desktopFailure.ReasonValue(), desktopFailure.StatusCodeValue(), err)
+		lastErr = err
+		lastFailure = failure
+		utils.LogErrorf("FetchLyrics: lookup failed source=mobile_api reason=%s status=%d error=%v", failure.ReasonValue(), failure.StatusCodeValue(), err)
 	}
 
-	// If no user token provided, we cannot fallback to the website,
-	// so we return the error now.
-	if utils.ConfigUserToken() == "" {
-		utils.LogInfof("FetchLyrics: skipping website fallback because musixmatch_user_token is not configured")
+	// // // Website
+	if utils.ConfigUserToken() != "" {
+		utils.LogInfof("FetchLyrics: lookup started source=website artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
+		resp, err, failure, success := fetchLyricsViaWebsiteScraping(input)
 
-		return lyrics.GetLyricsResponse{}, nil, desktopFailure, nil
-	}
-
-	// Fallback, scrape website
-	tracks, err, failure := searchForTracks(input)
-	if err != nil {
-		status := 0
-		reason := ""
-		if failure != nil {
-			status = failure.StatusCode
-			reason = failure.ReasonValue()
-		}
-		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", reason, status, err)
-		return lyrics.GetLyricsResponse{}, err, failure, nil
-	}
-
-	if len(tracks) > 0 {
-		utils.LogInfof("FetchLyrics: website search match_found")
-		var lastFailure *utils.LookupFailure
-		for _, track := range tracks {
-			pdk.Log(pdk.LogDebug, fmt.Sprintf("FetchLyrics: website candidate found artist=%s title=%s album=%s mbz=%s", track.Artist, track.Title, track.CommontrackVanityID, input.Track.MBZRecordingID))
-			resp, err, failure, success := scrapeWebsiteLyricsForTrack(track, input)
-			if isIdentityRejection(err) {
-				utils.LogInfof("FetchLyrics: website candidate rejected reason=%s", err.Error())
-				continue
-			}
-			if err != nil {
-				return resp, err, failure, success
-			}
-			if len(resp.Lyrics) > 0 {
-				utils.LogInfof("FetchLyrics: website candidate accepted source=website category=%s", success.CategoryValue())
-				return resp, nil, nil, success
-			}
+		if err == nil && len(resp.Lyrics) > 0 {
+			utils.LogInfof("FetchLyrics: lookup succeeded source=website category=%s", success.CategoryValue())
+			return resp, nil, nil, success, mobileGUIDAssignment.Variant
+		} else if err != nil {
+			lastErr = err
 			lastFailure = failure
+			utils.LogErrorf("FetchLyrics: lookup failed source=website reason=%s status=%d error=%v", failure.ReasonValue(), failure.StatusCodeValue(), err)
 		}
-
-		utils.LogInfof("FetchLyrics: Could not find any lyrics for any of the candidate tracks, returning last failure")
-		return lyrics.GetLyricsResponse{}, nil, lastFailure, nil
 	}
 
-	utils.LogInfof("FetchLyrics: website search no_match_found")
-	failure = utils.NewLookupFailure("search_no_match", "website", nil).WithPhase("website_search")
-	return lyrics.GetLyricsResponse{}, nil, failure, nil
+	// // // Desktop
+	// Currently disabled because Musixmatch is actively poisoning the responses.
+	// resp, err, failure, success := fetchLyricsFromDesktopAPI(input)
+
+	// if err == nil && len(resp.Lyrics) > 0 {
+	// 	utils.LogInfof("FetchLyrics: lookup succeeded source=desktop_api category=%s", success.CategoryValue())
+	// 	return resp, nil, success
+	// }
+	// if err != nil {
+	// 	utils.LogErrorf("FetchLyrics: desktop API lookup failed reason=%s status=%d error=%v", failure.ReasonValue(), failure.StatusCodeValue(), err)
+	// }
+	if lastFailure != nil {
+		return lyrics.GetLyricsResponse{}, lastErr, lastFailure, nil, mobileGUIDAssignment.Variant
+	}
+	err := fmt.Errorf("No lyrics found for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
+	failure := utils.NewLookupFailure("lyrics_not_found", "all_sources", err).WithPhase("all_sources")
+	return lyrics.GetLyricsResponse{},
+		err,
+		failure,
+		nil,
+		mobileGUIDAssignment.Variant
 }

@@ -3,7 +3,6 @@ package musixmatch
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"strings"
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
@@ -11,45 +10,48 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-var nextDataRe = regexp.MustCompile(`(?s)<script id="__NEXT_DATA__" type="application/json">(.*?)</script>`)
+func fetchLyricsViaWebsiteScraping(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	// Fallback, scrape website
+	tracks, err, failure := searchForTracks(input)
+	if err == nil {
+		if len(tracks) > 0 {
+			var lastFailure *utils.LookupFailure
+			utils.LogInfof("FetchLyrics: website search match_found")
+			for _, track := range tracks {
+				pdk.Log(pdk.LogDebug, fmt.Sprintf("FetchLyrics: website candidate found artist=%s title=%s album=%s mbz=%s", track.Artist, track.Title, track.CommontrackVanityID, input.Track.MBZRecordingID))
+				resp, err, failure, success := scrapeWebsiteLyricsForTrack(track, input)
+				if isIdentityRejection(err) {
+					utils.LogInfof("FetchLyrics: website candidate rejected reason=%s", err.Error())
+					continue
+				}
+				if err != nil {
+					return resp, err, failure, success
+				}
+				if len(resp.Lyrics) > 0 {
+					utils.LogInfof("FetchLyrics: website candidate accepted source=website category=%s", success.CategoryValue())
+					return resp, nil, nil, success
+				}
+			}
 
-type subtitleLine struct {
-	Text string `json:"text"`
-	Time struct {
-		Total      float64 `json:"total"`
-		Minutes    int     `json:"minutes"`
-		Seconds    int     `json:"seconds"`
-		Hundredths int     `json:"hundredths"`
-	} `json:"time"`
-	Type string `json:"type"`
-}
+			if lastFailure != nil {
+				return lyrics.GetLyricsResponse{}, fmt.Errorf("website search failed"), lastFailure, nil
+			} else {
+				return lyrics.GetLyricsResponse{}, fmt.Errorf("website search found no lyrics"), nil, nil
+			}
+		} else {
+			return lyrics.GetLyricsResponse{}, fmt.Errorf("website search found no tracks"), nil, nil
+		}
+	} else {
+		status := 0
+		reason := ""
+		if failure != nil {
+			status = failure.StatusCode
+			reason = failure.ReasonValue()
+		}
 
-type sectionLine struct {
-	Title string         `json:"title"`
-	Lines []subtitleLine `json:"lines"`
-}
-
-type nextDataResponse struct {
-	Props struct {
-		PageProps struct {
-			Data struct {
-				TrackInfo struct {
-					Data struct {
-						Track struct {
-							AlbumName  string `json:"albumName"`
-							ArtistName string `json:"artistName"`
-						} `json:"track"`
-						Lyrics struct {
-							Body     string `json:"body"`
-							Language string `json:"language"`
-						} `json:"lyrics"`
-						TrackStructureList []sectionLine  `json:"trackStructureList"`
-						Subtitle           []subtitleLine `json:"subtitle"`
-					} `json:"data"`
-				} `json:"trackInfo"`
-			} `json:"data"`
-		} `json:"pageProps"`
-	} `json:"props"`
+		utils.LogErrorf("FetchLyrics: website search failed reason=%s status=%d error=%v", reason, status, err)
+		return lyrics.GetLyricsResponse{}, err, failure, nil
+	}
 }
 
 var doMusixmatchWebsiteLyricsGetRequest = utils.DoMusixmatchWebsiteGetRequest
@@ -79,7 +81,7 @@ func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (ly
 	}
 	utils.LogInfof("website lyrics page: response received body_bytes=%d", len(body))
 
-	matches := nextDataRe.FindSubmatch(body)
+	matches := WEBSITE_NEXT_DATA_REGEX.FindSubmatch(body)
 	if len(matches) < 2 {
 		utils.LogErrorf("website lyrics page: Next.js data not found body_bytes=%d", len(body))
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: response body=%s", string(body)))

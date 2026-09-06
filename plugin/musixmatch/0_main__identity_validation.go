@@ -16,6 +16,7 @@ var (
 
 type trackMetadata struct {
 	Artist string
+	Title  string
 	Album  string
 }
 
@@ -24,17 +25,20 @@ func isIdentityRejection(err error) bool { return errors.Is(err, errIdentityReje
 func rejectIdentity(reason string) error { return errors.Join(errIdentityRejected, errors.New(reason)) }
 
 func validateMatchedIdentity(input lyrics.GetLyricsRequest, meta trackMetadata, source string) error {
-	if meta.Artist == "" && meta.Album == "" {
-		utils.LogInfof("%s: metadata_unavailable, validation skipped", source)
-		return nil
+	if meta.Artist == "" || meta.Title == "" {
+		utils.LogInfof("%s: metadata_unavailable, rejecting lyrics", source)
+		return rejectIdentity("metadata_unavailable")
 	}
 	if input.Track.Artist != "" && meta.Artist != "" && !artistsSimilar(input.Track.Artist, meta.Artist) {
 		utils.LogInfof("%s: artist_mismatch, rejecting lyrics; requested_artist=%s actual_artist=%s", source, input.Track.Artist, meta.Artist)
 		return rejectIdentity("artist_mismatch")
 	}
+	if input.Track.Title != "" && meta.Title != "" && !validStrictSimilarity(input.Track.Title, meta.Title) {
+		utils.LogInfof("%s: title_mismatch, rejecting lyrics; requested_title=%s actual_title=%s", source, input.Track.Title, meta.Title)
+		return rejectIdentity("title_mismatch")
+	}
 	if input.Track.Album != "" && meta.Album != "" && !validStrictSimilarity(input.Track.Album, meta.Album) {
-		utils.LogInfof("%s: album_mismatch, rejecting lyrics; requested_album=%s actual_album=%s", source, input.Track.Album, meta.Album)
-		return rejectIdentity("album_mismatch")
+		utils.LogInfof("%s: album_mismatch informational; requested_album=%s actual_album=%s", source, input.Track.Album, meta.Album)
 	}
 	return nil
 }

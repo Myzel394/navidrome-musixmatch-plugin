@@ -1,20 +1,21 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.3.6",
+  "version": "0.3.7",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
     "http": {
       "reason": "To search and fetch lyrics from Musixmatch, and to send opt-in analytics to the maintainer's OpenObserve instance",
       "requiredHosts": [
+        "apic-appmobile.musixmatch.com",
         "apic-desktop.musixmatch.com",
         "bugs.myzel394.app",
         "www.musixmatch.com"
       ]
     },
     "cache": {
-      "reason": "To cache the anonymous Musixmatch desktop API token between lyrics requests"
+      "reason": "To cache anonymous Musixmatch API tokens between lyrics requests"
     }
   },
   "config": {
@@ -45,6 +46,24 @@
           "title": "HTTP Accept Header",
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
+        },
+        "musixmatch_mobile_user_agent": {
+          "type": "string",
+          "title": "Mobile API User-Agent",
+          "default": "Musixmatch/2025120901 CFNetwork/3860.300.31 Darwin/25.2.0",
+          "description": "X-User-Agent header sent to the Musixmatch mobile API."
+        },
+        "musixmatch_mobile_app_version": {
+          "type": "string",
+          "title": "Mobile API App Version",
+          "default": "10.1.1",
+          "description": "x-mxm-app-version header sent to the Musixmatch mobile API."
+        },
+        "musixmatch_mobile_app_id": {
+          "type": "string",
+          "title": "Mobile API App ID",
+          "default": "mac-ios-v2.0",
+          "description": "app_id query value sent to the Musixmatch mobile API."
         },
         "max_website_candidate_attempts": {
           "type": "integer",
@@ -130,6 +149,18 @@
             {
               "type": "Control",
               "scope": "#/properties/musixmatch_http_accept"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/musixmatch_mobile_user_agent"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/musixmatch_mobile_app_version"
+            },
+            {
+              "type": "Control",
+              "scope": "#/properties/musixmatch_mobile_app_id"
             },
             {
               "type": "Control",

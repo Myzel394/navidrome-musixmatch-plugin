@@ -19,7 +19,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 
 	query := desktopLyricsQuery(input, token)
 
-	var resp desktopResponse
+	var resp macroResponse
 	err = desktopGet("macro.subtitles.get", query, &resp)
 	if err != nil {
 		utils.LogErrorf("desktop API: lyrics request failed error=%v", err)
@@ -27,21 +27,21 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("desktop API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == desktopAPIBlocked {
+	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		desktopInvalidateUserToken()
 		err := fmt.Errorf("desktop API returned 401 for lyrics request")
 		failure := utils.NewLookupFailure("desktop_macro_blocked", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
-	if resp.Message.Header.StatusCode != desktopAPISuccess {
+	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned status %d for lyrics request", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("desktop_macro_status", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 
-	var body desktopMacroBody
+	var body macroBody
 	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
 		utils.LogErrorf("desktop API: failed to parse desktop API macro body body_bytes=%d error=%v", len(resp.Message.Body), err)
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
@@ -50,42 +50,39 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	}
 	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
-	// meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
-	// if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
-	// 	utils.LogInfof("desktop API: matched metadata rejected, falling back to website")
-	// 	return lyrics.GetLyricsResponse{}, nil, nil, nil
-	// }
-
-	if resp, ok := lyricsFromDesktopRichsync(body.MacroCalls["track.richsync.get"]); ok {
+	matcherCall := body.MacroCalls["matcher.track.get"]
+	meta, err := parseResponseToTrackMetadata(matcherCall)
+	if err != nil {
+		utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
+	}
+	if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
+		utils.LogInfof("desktop API: matched metadata rejected")
+		return lyrics.GetLyricsResponse{}, nil, nil, nil
+	}
+	if resp, ok := lyricsFromRichsync(body.MacroCalls["track.richsync.get"]); ok && lyricsResponseAllowed(resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=richsync")
 		success := utils.NewLookupSuccess("desktop_synced")
 		return resp, nil, nil, success
+	} else if ok {
+		utils.LogInfof("desktop_api: rejected lyrics reason=generated_pseudo_lyrics")
 	}
-	if resp, ok := lyricsFromDesktopSubtitle(body.MacroCalls["track.subtitles.get"]); ok {
+	if resp, ok := lyricsFromSubtitle(body.MacroCalls["track.subtitles.get"]); ok && lyricsResponseAllowed(resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=subtitle")
 		success := utils.NewLookupSuccess("desktop_synced")
 		return resp, nil, nil, success
+	} else if ok {
+		utils.LogInfof("desktop_api: rejected lyrics reason=generated_pseudo_lyrics")
 	}
-	if resp, ok := lyricsFromDesktopPlain(body.MacroCalls["track.lyrics.get"]); ok {
+	if resp, ok := lyricsFromPlain(body.MacroCalls["track.lyrics.get"]); ok && lyricsResponseAllowed(resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=plain")
 		success := utils.NewLookupSuccess("desktop_plain")
 		return resp, nil, nil, success
+	} else if ok {
+		utils.LogInfof("desktop_api: rejected lyrics reason=generated_pseudo_lyrics")
 	}
 
 	utils.LogInfof("desktop API: lookup finished without lyrics")
 	err = fmt.Errorf(desktopFallbackErr)
 	failure = utils.NewLookupFailure("desktop_no_lyrics", "desktop_api", err).WithPhase("desktop_lyrics")
 	return lyrics.GetLyricsResponse{}, err, failure, nil
-}
-
-func desktopMatchedMetadata(call desktopResponse) trackMetadata {
-	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
-		return trackMetadata{}
-	}
-	var body desktopTrackBody
-	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
-		utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(call.Message.Body))
-		return trackMetadata{}
-	}
-	return trackMetadata{Artist: body.Track.ArtistName, Album: body.Track.AlbumName}
 }

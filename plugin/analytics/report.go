@@ -9,35 +9,37 @@ import (
 )
 
 const (
-	analyticsSchemaVersion = "1"
+	analyticsSchemaVersion = "2"
 	maxAnalyticsTextLen    = 2000
 )
 
 type lookupAnalytics struct {
-	Input     lyrics.GetLyricsRequest
-	Response  lyrics.GetLyricsResponse
-	Err       error
-	Failure   *utils.LookupFailure
-	Success   *utils.LookupSuccess
-	StartedAt time.Time
-	Duration  time.Duration
-	Logs      []utils.CapturedLog
+	Input             lyrics.GetLyricsRequest
+	Response          lyrics.GetLyricsResponse
+	Err               error
+	Failure           *utils.LookupFailure
+	Success           *utils.LookupSuccess
+	MobileGUIDVariant string
+	StartedAt         time.Time
+	Duration          time.Duration
+	Logs              []utils.CapturedLog
 }
 
-func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResponse, err error, failure *utils.LookupFailure, success *utils.LookupSuccess, startedAt time.Time, duration time.Duration, logs []utils.CapturedLog) {
+func ReportLyricsLookup(input lyrics.GetLyricsRequest, resp lyrics.GetLyricsResponse, err error, failure *utils.LookupFailure, success *utils.LookupSuccess, mobileGUIDVariant string, startedAt time.Time, duration time.Duration, logs []utils.CapturedLog) {
 	if strings.TrimSpace(utils.OpenObserveAuthToken) == "" {
 		return
 	}
 
 	lookup := lookupAnalytics{
-		Input:     input,
-		Response:  resp,
-		Err:       err,
-		Failure:   failure,
-		Success:   success,
-		StartedAt: startedAt,
-		Duration:  duration,
-		Logs:      logs,
+		Input:             input,
+		Response:          resp,
+		Err:               err,
+		Failure:           failure,
+		Success:           success,
+		MobileGUIDVariant: mobileGUIDVariant,
+		StartedAt:         startedAt,
+		Duration:          duration,
+		Logs:              logs,
 	}
 
 	if utils.ConfigShareMetrics() {

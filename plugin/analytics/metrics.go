@@ -31,6 +31,7 @@ func reportLookupMetrics(lookup lookupAnalytics, input lyrics.GetLyricsRequest) 
 		"track_has_title":            input.Track.Title != "",
 		"track_has_mzb_recording_id": input.Track.MBZRecordingID != "",
 		"has_musixmatch_user_token":  utils.ConfigUserToken() != "",
+		"mobile_guid_variant":        lookup.MobileGUIDVariant,
 		"schema.version":             analyticsSchemaVersion,
 		"result":                     result,
 		"_timestamp":                 now,

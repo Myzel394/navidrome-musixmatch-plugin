@@ -37,8 +37,9 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 			otlpStringAttr("track.album", lookup.Input.Track.Album),
 			otlpStringAttr("track.artist", lookup.Input.Track.Artist),
 			otlpStringAttr("track.title", lookup.Input.Track.Title),
-			otlpStringAttr("track.mzb_recording_id", lookup.Input.Track.MBZRecordingID),
+			otlpStringAttr("track.mbz_recording_id", lookup.Input.Track.MBZRecordingID),
 			otlpBoolAttr("config.has_musixmatch_user_token", utils.ConfigUserToken() != ""),
+			otlpStringAttr("mobile_guid_variant", lookup.MobileGUIDVariant),
 
 			otlpStringAttr("plugin.source", utils.OpenObserveAttributePluginSource),
 			otlpStringAttr("plugin.version", utils.OpenObserveAttributeVersion),
@@ -46,12 +47,6 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 		},
 		Events: failureLogEvents(lookup.Logs),
 		Status: otlpStatus{Code: 2, Message: failureMessage},
-	}
-	if lookup.Input.Track.Album != "" {
-		span.Attributes = append(span.Attributes, otlpStringAttr("track.album", lookup.Input.Track.Album))
-	}
-	if lookup.Input.Track.MBZRecordingID != "" {
-		span.Attributes = append(span.Attributes, otlpStringAttr("track.mbz_recording_id", lookup.Input.Track.MBZRecordingID))
 	}
 	if failure != nil && failure.StatusCode > 0 {
 		span.Attributes = append(span.Attributes, otlpIntAttr("http.status_code", failure.StatusCode))

@@ -11,11 +11,6 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-const (
-	desktopTokenCache = "musixmatch_desktop_user_token"
-	desktopTokenTTL   = 10 * time.Minute
-)
-
 type desktopTokenBody struct {
 	UserToken string `json:"user_token"`
 }
@@ -32,7 +27,7 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 	query := url.Values{}
 	query.Set("user_language", "en")
 
-	var resp desktopResponse
+	var resp macroResponse
 	err := desktopGet("token.get", query, &resp)
 	if err != nil {
 		utils.LogErrorf("desktop API: token request failed error=%v", err)
@@ -40,13 +35,13 @@ func desktopUserToken() (string, error, *utils.LookupFailure) {
 		return "", err, failure
 	}
 	utils.LogInfof("desktop API: token response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == desktopAPIBlocked {
+	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: token response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned 401 while fetching token")
 		failure := utils.NewLookupFailure("desktop_token_blocked", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)
 		return "", err, failure
 	}
-	if resp.Message.Header.StatusCode != desktopAPISuccess {
+	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: token response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned status %d while fetching token", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("desktop_token_status", "desktop_api", err).WithPhase("desktop_token").WithStatusCode(resp.Message.Header.StatusCode)

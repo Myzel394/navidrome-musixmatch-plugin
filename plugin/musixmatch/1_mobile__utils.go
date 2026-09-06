@@ -30,21 +30,23 @@ func buildMobileLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Val
 	return q
 }
 
-func mobileGet(action string, query url.Values, out any) error {
+func mobileGet(action string, query url.Values, assignment mobileGUIDAssignment, out any) error {
 	query.Set("app_id", utils.ConfigMobileAppID())
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
-	body, err := _doMobileGetRequest(fmt.Sprintf(utils.MusixmatchMobileAPIURL, action) + "?" + query.Encode())
+	body, err := _doMobileGetRequest(fmt.Sprintf(utils.MusixmatchMobileAPIURL, action)+"?"+query.Encode(), assignment)
 	if err != nil {
 		return err
 	}
 	return json.Unmarshal(body, out)
 }
 
-func _doMobileGetRequest(endpoint string) ([]byte, error) {
+func _doMobileGetRequest(endpoint string, assignment mobileGUIDAssignment) ([]byte, error) {
 	req := pdk.NewHTTPRequest(pdk.MethodGet, endpoint)
 	req.SetHeader("Host", "apic-appmobile.musixmatch.com")
 	req.SetHeader("authority", "apic-appmobile.musixmatch.com")
-	req.SetHeader("X-Cookie", "x-mxm-token-guid=")
+	if assignment.GUID != "" {
+		req.SetHeader("X-Cookie", "x-mxm-token-guid="+assignment.GUID)
+	}
 	req.SetHeader("x-mxm-app-version", utils.ConfigMobileAppVersion())
 	req.SetHeader("X-User-Agent", utils.ConfigMobileUserAgent())
 	req.SetHeader("Accept-Language", "en-US,en;q=0.9")

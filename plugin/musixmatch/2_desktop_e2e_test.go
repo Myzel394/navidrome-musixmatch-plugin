@@ -1,6 +1,7 @@
 package musixmatch
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,7 +21,7 @@ import (
 func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 	mockDesktopAPI(t)
 
-	resp, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
+	resp, err, failure, success, variant := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{
 			Artist:   "Billie Eilish",
 			Title:    "Birds of a Feather",
@@ -35,6 +36,9 @@ func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 	}
 	if success == nil {
 		t.Fatal("expected success metadata")
+	}
+	if variant != mobileGUIDVariantRandom {
+		t.Fatalf("expected random_guid variant, got %q", variant)
 	}
 	if len(resp.Lyrics) == 0 {
 		t.Fatal("expected at least one lyrics result")
@@ -54,6 +58,8 @@ func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 
 func mockDesktopAPI(t *testing.T) {
 	t.Helper()
+	originalReader := mobileExperimentRandomReader
+	mobileExperimentRandomReader = bytes.NewReader([]byte{1, 'f', 'i', 'x', 't', 'u', 'r', 'e', '-', 'g', 'u', 'i', 'd', '-', '0', '0', '1'})
 
 	tokenBody := []byte(`{"message":{"header":{"status_code":200},"body":{"user_token":"fixture-token"}}}`)
 	macroBody := mobileFirstMacroFixture(t)
@@ -66,7 +72,7 @@ func mockDesktopAPI(t *testing.T) {
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppVersion).Return("", false).Maybe()
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppID).Return("", false).Maybe()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "token.get")
+		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "token.get") && strings.Contains(endpoint, "guid=66697874-7572-452d-a775-69642d303031")
 	})).Return(&pdk.HTTPRequest{}).Once()
 	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, tokenBody)).Once()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
@@ -85,6 +91,7 @@ func mockDesktopAPI(t *testing.T) {
 	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Maybe()
 
 	t.Cleanup(func() {
+		mobileExperimentRandomReader = originalReader
 		host.CacheMock.ExpectedCalls = nil
 		host.CacheMock.Calls = nil
 		pdk.PDKMock.ExpectedCalls = nil

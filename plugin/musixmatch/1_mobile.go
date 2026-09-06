@@ -9,28 +9,20 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	return fetchLyricsFromMobileAPIWithRetry(input, false)
-}
-
-func fetchLyricsFromMobileAPIWithRetry(input lyrics.GetLyricsRequest, retried bool) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	token, err, failure := mobileUserToken()
+func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGUIDAssignment) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	token, err, failure := mobileUserToken(assignment)
 	if err != nil {
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	var resp macroResponse
-	if err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), &resp); err != nil {
+	if err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), assignment, &resp); err != nil {
 		failure := utils.NewLookupFailure("mobile_macro_request_failed", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("mobile API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
 	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
-		if !retried {
-			mobileInvalidateUserToken()
-			utils.LogInfof("mobile API: token invalidated after 401, retrying once")
-			return fetchLyricsFromMobileAPIWithRetry(input, true)
-		}
-		return lyrics.GetLyricsResponse{}, fmt.Errorf("mobile API returned 401 for lyrics request"), utils.NewLookupFailure("mobile_blocked", "mobile_api", fmt.Errorf("mobile API returned 401 for lyrics request")).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode), nil
+		err := fmt.Errorf("mobile API returned 401 for lyrics request")
+		return lyrics.GetLyricsResponse{}, err, utils.NewLookupFailure("mobile_blocked", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode), nil
 	}
 	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(resp.Message.Body)))

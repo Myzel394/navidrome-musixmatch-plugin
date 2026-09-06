@@ -10,15 +10,20 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/host"
 )
 
-func mobileUserToken() (string, error, *utils.LookupFailure) {
-	if token, ok, err := host.CacheGetString(mobileTokenCache); err == nil && ok && token != "" {
+func mobileUserToken(assignment mobileGUIDAssignment) (string, error, *utils.LookupFailure) {
+	if token, ok, err := host.CacheGetString(mobileTokenCache); err != nil {
+		utils.LogErrorf("mobile API token cache read failed: %v", err)
+	} else if ok && token != "" {
 		utils.LogInfof("mobile API: token cache hit")
 		return token, nil, nil
 	}
 	query := url.Values{}
 	query.Set("user_language", "en")
+	if assignment.GUID != "" {
+		query.Set("guid", assignment.GUID)
+	}
 	var resp macroResponse
-	if err := mobileGet("token.get", query, &resp); err != nil {
+	if err := mobileGet("token.get", query, assignment, &resp); err != nil {
 		failure := utils.NewLookupFailure("mobile_token_request_failed", "mobile_api", err).WithPhase("mobile_token")
 		return "", err, failure
 	}
@@ -38,4 +43,6 @@ func mobileUserToken() (string, error, *utils.LookupFailure) {
 	return body.UserToken, nil, nil
 }
 
-func mobileInvalidateUserToken() { _ = host.CacheRemove(mobileTokenCache) }
+func mobileInvalidateUserToken() {
+	_ = host.CacheRemove(mobileTokenCache)
+}

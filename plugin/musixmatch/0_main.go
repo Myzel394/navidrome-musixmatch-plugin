@@ -16,12 +16,13 @@ type Song struct {
 // Return error whenever a lyrics could not be fetched.
 // Return a failure only if the lookup failed due to a fixable error.
 // Some lyrics just don't exist, and we do not need a failure for that.
-func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess) {
+func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error, *utils.LookupFailure, *utils.LookupSuccess, string) {
+	mobileGUIDAssignment := chooseMobileGUIDAssignment()
 	// // // Mobile
 	utils.LogInfof("FetchLyrics: lookup started for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
-	if resp, err, failure, success := fetchLyricsFromMobileAPI(input); err == nil && len(resp.Lyrics) > 0 {
+	if resp, err, failure, success := fetchLyricsFromMobileAPI(input, mobileGUIDAssignment); err == nil && len(resp.Lyrics) > 0 {
 		utils.LogInfof("FetchLyrics: lookup succeeded source=mobile_api category=%s", success.CategoryValue())
-		return resp, nil, nil, success
+		return resp, nil, nil, success, mobileGUIDAssignment.Variant
 	} else if err != nil {
 		utils.LogErrorf("FetchLyrics: mobile API lookup failed reason=%s status=%d error=%v", failure.ReasonValue(), failure.StatusCodeValue(), err)
 	}
@@ -32,7 +33,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 
 		if err == nil && len(resp.Lyrics) > 0 {
 			utils.LogInfof("FetchLyrics: lookup succeeded source=mobile_api category=%s", success.CategoryValue())
-			return resp, nil, nil, success
+			return resp, nil, nil, success, mobileGUIDAssignment.Variant
 		} else if err != nil {
 			utils.LogErrorf("FetchLyrics: mobile API lookup failed reason=%s status=%d error=%v", failure.ReasonValue(), failure.StatusCodeValue(), err)
 		}
@@ -57,5 +58,6 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, error
 	return lyrics.GetLyricsResponse{},
 		fmt.Errorf("No lyrics found for artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID),
 		failure,
-		nil
+		nil,
+		mobileGUIDAssignment.Variant
 }

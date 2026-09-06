@@ -2,6 +2,8 @@ package musixmatch
 
 import (
 	"encoding/json"
+
+	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 )
 
 type macroResponse struct {
@@ -55,3 +57,14 @@ type macroRichsyncLine struct {
 	Text      string  `json:"x"`
 }
 
+// Parse response to common `trackMetadata` struct
+func parseResponseToTrackMetadata(call macroResponse) (trackMetadata, error) {
+	if call.Message.Header.StatusCode != utils.HTTPStatusOK || len(call.Message.Body) == 0 {
+		return trackMetadata{}, nil
+	}
+	var body macroTrackBody
+	if err := json.Unmarshal(call.Message.Body, &body); err != nil {
+		return trackMetadata{}, err
+	}
+	return trackMetadata{Artist: body.Track.ArtistName, Title: body.Track.TrackName, Album: body.Track.AlbumName}, nil
+}

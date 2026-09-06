@@ -50,15 +50,10 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	}
 	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
-	meta := trackMetadata{}
 	matcherCall := body.MacroCalls["matcher.track.get"]
-	if matcherCall.Message.Header.StatusCode == utils.HTTPStatusOK && len(matcherCall.Message.Body) > 0 {
-		var trackBody macroTrackBody
-		if err := json.Unmarshal(matcherCall.Message.Body, &trackBody); err != nil {
-			utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
-		} else {
-			meta = trackMetadata{Artist: trackBody.Track.ArtistName, Title: trackBody.Track.TrackName, Album: trackBody.Track.AlbumName}
-		}
+	meta, err := parseResponseToTrackMetadata(matcherCall)
+	if err != nil {
+		utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
 	}
 	if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
 		utils.LogInfof("desktop API: matched metadata rejected")

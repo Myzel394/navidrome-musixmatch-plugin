@@ -45,15 +45,10 @@ func fetchLyricsFromMobileAPIWithRetry(input lyrics.GetLyricsRequest, retried bo
 		failure := utils.NewLookupFailure("mobile_macro_parse", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
-	meta := trackMetadata{}
 	matcherCall := body.MacroCalls["matcher.track.get"]
-	if matcherCall.Message.Header.StatusCode == utils.HTTPStatusOK && len(matcherCall.Message.Body) > 0 {
-		var trackBody macroTrackBody
-		if err := json.Unmarshal(matcherCall.Message.Body, &trackBody); err != nil {
-			utils.LogInfof("mobile API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
-		} else {
-			meta = trackMetadata{Artist: trackBody.Track.ArtistName, Title: trackBody.Track.TrackName, Album: trackBody.Track.AlbumName}
-		}
+	meta, err := parseResponseToTrackMetadata(matcherCall)
+	if err != nil {
+		utils.LogInfof("mobile API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
 	}
 	if err := validateMatchedIdentity(input, meta, "mobile API"); err != nil {
 		return lyrics.GetLyricsResponse{}, nil, nil, nil

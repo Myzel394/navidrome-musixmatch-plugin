@@ -1,10 +1,10 @@
 package musixmatch
 
 import (
-	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
-
 	"regexp"
 	"strings"
+
+	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
 
 func lyricsResponseAllowed(resp lyrics.GetLyricsResponse) bool {

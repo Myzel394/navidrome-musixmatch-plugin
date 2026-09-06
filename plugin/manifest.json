@@ -8,13 +8,14 @@
     "http": {
       "reason": "To search and fetch lyrics from Musixmatch, and to send opt-in analytics to the maintainer's OpenObserve instance",
       "requiredHosts": [
+        "apic-appmobile.musixmatch.com",
         "apic-desktop.musixmatch.com",
         "bugs.myzel394.app",
         "www.musixmatch.com"
       ]
     },
     "cache": {
-      "reason": "To cache the anonymous Musixmatch desktop API token between lyrics requests"
+      "reason": "To cache anonymous Musixmatch API tokens between lyrics requests"
     }
   },
   "config": {

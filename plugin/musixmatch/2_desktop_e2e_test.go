@@ -55,20 +55,31 @@ func TestFetchLyricsBirdsOfAFeatherDesktopEndToEnd(t *testing.T) {
 func mockDesktopAPI(t *testing.T) {
 	t.Helper()
 
-	tokenBody := mustGetDesktopTokenBody(t)
-	macroBody := mustGetDesktopMacroBody(t, tokenBody)
+	tokenBody := []byte(`{"message":{"header":{"status_code":200},"body":{"user_token":"fixture-token"}}}`)
+	macroBody := mobileFirstMacroFixture(t)
 
-	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Once()
-	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Once()
+	host.CacheMock.On("GetString", mobileTokenCache).Return("", false, nil).Once()
+	host.CacheMock.On("SetString", mobileTokenCache, mock.AnythingOfType("string"), int64(mobileTokenTTL/time.Second)).Return(nil).Once()
 	pdk.PDKMock.On("Log", mock.Anything, mock.Anything).Return()
+	pdk.PDKMock.On("GetConfig", utils.ConfigKeyUserToken).Return("", true).Maybe()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "token.get")
+		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "token.get")
 	})).Return(&pdk.HTTPRequest{}).Once()
 	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, tokenBody)).Once()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "macro.subtitles.get") && strings.Contains(endpoint, "q_artist=Billie+Eilish")
+		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "macro.subtitles.get") && strings.Contains(endpoint, "q_artist=Billie+Eilish") && strings.Contains(endpoint, "q_duration=213")
 	})).Return(&pdk.HTTPRequest{}).Once()
 	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Once()
+	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Maybe()
+	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Maybe()
+	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
+		return strings.Contains(endpoint, "apic-desktop.musixmatch.com") && strings.Contains(endpoint, "token.get")
+	})).Return(&pdk.HTTPRequest{}).Maybe()
+	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
+		return strings.Contains(endpoint, "apic-desktop.musixmatch.com") && strings.Contains(endpoint, "macro.subtitles.get")
+	})).Return(&pdk.HTTPRequest{}).Maybe()
+	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, tokenBody)).Maybe()
+	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Maybe()
 
 	t.Cleanup(func() {
 		host.CacheMock.ExpectedCalls = nil
@@ -76,6 +87,51 @@ func mockDesktopAPI(t *testing.T) {
 		pdk.PDKMock.ExpectedCalls = nil
 		pdk.PDKMock.Calls = nil
 	})
+}
+
+func mobileFirstMacroFixture(t *testing.T) []byte {
+	t.Helper()
+	macro := desktopMacroBody{MacroCalls: map[string]desktopResponse{}}
+	trackBody, _ := json.Marshal(map[string]any{"track": map[string]string{"track_name": "Birds of a Feather", "artist_name": "Billie Eilish", "album_name": ""}})
+	subtitleBody, _ := json.Marshal(map[string]any{"subtitle_list": []any{map[string]any{"subtitle": map[string]string{"subtitle_body": "[00:01.00]Birds of a feather\n[00:02.00]We should stick together\n", "subtitle_language": "en"}}}})
+	track := desktopResponse{}
+	track.Message.Header.StatusCode = statusCodePISuccess
+	track.Message.Body = trackBody
+	subtitle := desktopResponse{}
+	subtitle.Message.Header.StatusCode = statusCodePISuccess
+	subtitle.Message.Body = subtitleBody
+	macro.MacroCalls["matcher.track.get"] = track
+	macro.MacroCalls["track.subtitles.get"] = subtitle
+	body, _ := json.Marshal(macro)
+	outer := desktopResponse{}
+	outer.Message.Header.StatusCode = statusCodePISuccess
+	outer.Message.Body = body
+	out, _ := json.Marshal(outer)
+	return out
+}
+
+func withMatchedTrackFixture(t *testing.T, macroBody []byte, title, artist, album string) []byte {
+	t.Helper()
+	var outer desktopResponse
+	if err := json.Unmarshal(macroBody, &outer); err != nil {
+		t.Fatalf("failed to parse macro fixture: %v", err)
+	}
+	var macro desktopMacroBody
+	if err := json.Unmarshal(outer.Message.Body, &macro); err != nil {
+		t.Fatalf("failed to parse macro body fixture: %v", err)
+	}
+	trackBody, _ := json.Marshal(map[string]any{"track": map[string]string{"track_name": title, "artist_name": artist, "album_name": album}})
+	call := desktopResponse{}
+	call.Message.Header.StatusCode = statusCodePISuccess
+	call.Message.Body = trackBody
+	if macro.MacroCalls == nil {
+		macro.MacroCalls = map[string]desktopResponse{}
+	}
+	macro.MacroCalls["matcher.track.get"] = call
+	body, _ := json.Marshal(macro)
+	outer.Message.Body = body
+	out, _ := json.Marshal(outer)
+	return out
 }
 
 func mustGetDesktopTokenBody(t *testing.T) []byte {
@@ -96,7 +152,7 @@ func mustGetDesktopMacroBody(t *testing.T, tokenBody []byte) []byte {
 	if err := json.Unmarshal(tokenBody, &tokenResp); err != nil {
 		t.Fatalf("failed to parse desktop token fixture: %v", err)
 	}
-	if tokenResp.Message.Header.StatusCode != desktopAPISuccess {
+	if tokenResp.Message.Header.StatusCode != statusCodePISuccess {
 		t.Fatalf("desktop token fixture returned status %d: %s", tokenResp.Message.Header.StatusCode, tokenBody)
 	}
 	if len(tokenResp.Message.Body) == 0 {

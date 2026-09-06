@@ -11,7 +11,7 @@ import (
 )
 
 func lyricsFromDesktopRichsync(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess {
+	if call.Message.Header.StatusCode != statusCodePISuccess {
 		utils.LogInfof("desktop API: richsync lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
 		return lyrics.GetLyricsResponse{}, false
 	}
@@ -58,7 +58,7 @@ func lyricsFromDesktopRichsync(call desktopResponse) (lyrics.GetLyricsResponse, 
 }
 
 func lyricsFromDesktopSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess {
+	if call.Message.Header.StatusCode != statusCodePISuccess {
 		utils.LogInfof("desktop API: subtitle lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
 		return lyrics.GetLyricsResponse{}, false
 	}
@@ -89,7 +89,7 @@ func lyricsFromDesktopSubtitle(call desktopResponse) (lyrics.GetLyricsResponse, 
 }
 
 func lyricsFromDesktopPlain(call desktopResponse) (lyrics.GetLyricsResponse, bool) {
-	if call.Message.Header.StatusCode != desktopAPISuccess {
+	if call.Message.Header.StatusCode != statusCodePISuccess {
 		utils.LogInfof("desktop API: plain lyrics unavailable because status was not successful status=%d body_present=%t", call.Message.Header.StatusCode, len(call.Message.Body) > 0)
 		return lyrics.GetLyricsResponse{}, false
 	}

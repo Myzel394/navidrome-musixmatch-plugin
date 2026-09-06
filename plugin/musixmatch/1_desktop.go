@@ -27,14 +27,14 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
 	utils.LogInfof("desktop API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == desktopAPIBlocked {
+	if resp.Message.Header.StatusCode == statusCodeAPIBlocked {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		desktopInvalidateUserToken()
 		err := fmt.Errorf("desktop API returned 401 for lyrics request")
 		failure := utils.NewLookupFailure("desktop_macro_blocked", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, err, failure, nil
 	}
-	if resp.Message.Header.StatusCode != desktopAPISuccess {
+	if resp.Message.Header.StatusCode != statusCodePISuccess {
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("desktop API: lyrics response body=%s", string(resp.Message.Body)))
 		err := fmt.Errorf("desktop API returned status %d for lyrics request", resp.Message.Header.StatusCode)
 		failure := utils.NewLookupFailure("desktop_macro_status", "desktop_api", err).WithPhase("desktop_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
@@ -50,23 +50,22 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 	}
 	utils.LogInfof("desktop API: parsed lyrics response calls=%d richsync_available=%t subtitle_available=%t plain_available=%t", len(body.MacroCalls), body.MacroCalls["track.richsync.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.subtitles.get"].Message.Header.StatusCode != 0, body.MacroCalls["track.lyrics.get"].Message.Header.StatusCode != 0)
 
-	// meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
-	// if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
-	// 	utils.LogInfof("desktop API: matched metadata rejected, falling back to website")
-	// 	return lyrics.GetLyricsResponse{}, nil, nil, nil
-	// }
-
-	if resp, ok := lyricsFromDesktopRichsync(body.MacroCalls["track.richsync.get"]); ok {
+	meta := desktopMatchedMetadata(body.MacroCalls["matcher.track.get"])
+	if err := validateMatchedIdentity(input, meta, "desktop API"); err != nil {
+		utils.LogInfof("desktop API: matched metadata rejected")
+		return lyrics.GetLyricsResponse{}, nil, nil, nil
+	}
+	if resp, ok := lyricsFromDesktopRichsync(body.MacroCalls["track.richsync.get"]); ok && lyricsResponseAllowed("desktop_api", resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=richsync")
 		success := utils.NewLookupSuccess("desktop_synced")
 		return resp, nil, nil, success
 	}
-	if resp, ok := lyricsFromDesktopSubtitle(body.MacroCalls["track.subtitles.get"]); ok {
+	if resp, ok := lyricsFromDesktopSubtitle(body.MacroCalls["track.subtitles.get"]); ok && lyricsResponseAllowed("desktop_api", resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=subtitle")
 		success := utils.NewLookupSuccess("desktop_synced")
 		return resp, nil, nil, success
 	}
-	if resp, ok := lyricsFromDesktopPlain(body.MacroCalls["track.lyrics.get"]); ok {
+	if resp, ok := lyricsFromDesktopPlain(body.MacroCalls["track.lyrics.get"]); ok && lyricsResponseAllowed("desktop_api", resp) {
 		utils.LogInfof("desktop API: selected lyrics representation=plain")
 		success := utils.NewLookupSuccess("desktop_plain")
 		return resp, nil, nil, success
@@ -79,7 +78,7 @@ func fetchLyricsFromDesktopAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsR
 }
 
 func desktopMatchedMetadata(call desktopResponse) trackMetadata {
-	if call.Message.Header.StatusCode != desktopAPISuccess || len(call.Message.Body) == 0 {
+	if call.Message.Header.StatusCode != statusCodePISuccess || len(call.Message.Body) == 0 {
 		return trackMetadata{}
 	}
 	var body desktopTrackBody
@@ -87,5 +86,5 @@ func desktopMatchedMetadata(call desktopResponse) trackMetadata {
 		utils.LogInfof("desktop API: matched track metadata could not be parsed body_bytes=%d", len(call.Message.Body))
 		return trackMetadata{}
 	}
-	return trackMetadata{Artist: body.Track.ArtistName, Album: body.Track.AlbumName}
+	return trackMetadata{Artist: body.Track.ArtistName, Title: body.Track.TrackName, Album: body.Track.AlbumName}
 }

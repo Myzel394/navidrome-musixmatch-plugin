@@ -26,6 +26,7 @@ const (
 	MusixmatchSearchPageURL = "https://www.musixmatch.com/search?query=%s"
 	MusixmatchFetchPageURL  = "https://www.musixmatch.com/lyrics/%s"
 	MusixmatchDesktopAPIURL = "https://apic-desktop.musixmatch.com/ws/1.1/%s"
+	MusixmatchMobileAPIURL  = "https://apic-appmobile.musixmatch.com/ws/1.1/%s"
 )
 
 const (
@@ -33,6 +34,11 @@ const (
 	OpenObserveOrg        = "default"
 	OpenObserveTraceURL   = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/v1/traces"
 	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
+)
+
+const (
+	statusCodePISuccess  = 200
+	statusCodeAPIBlocked = 401
 )
 
 var (

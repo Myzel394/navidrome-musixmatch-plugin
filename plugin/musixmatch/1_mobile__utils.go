@@ -31,7 +31,7 @@ func buildMobileLyricsQuery(input lyrics.GetLyricsRequest, token string) url.Val
 }
 
 func mobileGet(action string, query url.Values, out any) error {
-	query.Set("app_id", mobileAppID)
+	query.Set("app_id", utils.ConfigMobileAppID())
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
 	body, err := _doMobileGetRequest(fmt.Sprintf(utils.MusixmatchMobileAPIURL, action) + "?" + query.Encode())
 	if err != nil {
@@ -45,8 +45,8 @@ func _doMobileGetRequest(endpoint string) ([]byte, error) {
 	req.SetHeader("Host", "apic-appmobile.musixmatch.com")
 	req.SetHeader("authority", "apic-appmobile.musixmatch.com")
 	req.SetHeader("X-Cookie", "x-mxm-token-guid=")
-	req.SetHeader("x-mxm-app-version", mobileAppVersion)
-	req.SetHeader("X-User-Agent", mobileUserAgent)
+	req.SetHeader("x-mxm-app-version", utils.ConfigMobileAppVersion())
+	req.SetHeader("X-User-Agent", utils.ConfigMobileUserAgent())
 	req.SetHeader("Accept-Language", "en-US,en;q=0.9")
 	req.SetHeader("Connection", "keep-alive")
 	req.SetHeader("Accept", "application/json")

@@ -52,6 +52,18 @@ func ConfigSearchHTTPAcceptHeader() string {
 	return getConfigString(ConfigKeyHTTPAccept, DefaultHTTPAccept)
 }
 
+func ConfigMobileUserAgent() string {
+	return getConfigString(ConfigKeyMobileUserAgent, DefaultMobileUserAgent)
+}
+
+func ConfigMobileAppVersion() string {
+	return getConfigString(ConfigKeyMobileAppVersion, DefaultMobileAppVersion)
+}
+
+func ConfigMobileAppID() string {
+	return getConfigString(ConfigKeyMobileAppID, DefaultMobileAppID)
+}
+
 func ConfigCaptchaID() string {
 	v, _ := pdk.GetConfig(ConfigKeyCaptchaID)
 	return v

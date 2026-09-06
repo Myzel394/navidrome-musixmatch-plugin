@@ -62,6 +62,9 @@ func mockDesktopAPI(t *testing.T) {
 	host.CacheMock.On("SetString", mobileTokenCache, mock.AnythingOfType("string"), int64(mobileTokenTTL/time.Second)).Return(nil).Once()
 	pdk.PDKMock.On("Log", mock.Anything, mock.Anything).Return()
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyUserToken).Return("", true).Maybe()
+	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileUserAgent).Return("", false).Maybe()
+	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppVersion).Return("", false).Maybe()
+	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppID).Return("", false).Maybe()
 	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
 		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "token.get")
 	})).Return(&pdk.HTTPRequest{}).Once()

@@ -84,3 +84,7 @@ func ConfigShareErrors() bool {
 func ConfigShareMetrics() bool {
 	return getConfigBool(ConfigKeyShareMetrics, true)
 }
+
+func ConfigWriteFetchedLyricsAsSidecar() bool {
+	return getConfigBool(ConfigKeyWriteFetchedLyricsAsSidecar, false)
+}

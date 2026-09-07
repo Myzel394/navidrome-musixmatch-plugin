@@ -1,7 +1,7 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
@@ -16,6 +16,10 @@
     },
     "cache": {
       "reason": "To cache anonymous Musixmatch API tokens between lyrics requests"
+    },
+    "library": {
+      "reason": "This permission is required to write the fetched lyrics into music libraries automatically",
+      "filesystem": true
     }
   },
   "config": {
@@ -34,6 +38,12 @@
           "title": "Musixmatch Captcha ID",
           "default": "",
           "description": "Open the search page in your browser, solve the captcha, and then copy the 'captcha_id' cookie value here. This will allow the plugin to bypass the captcha for future searches."
+        },
+        "write_fetched_lyrics_as_sidecar_file": {
+          "type": "boolean",
+          "title": "Write lyrics sidecar file",
+          "default": false,
+          "description": "When enabled, fetched lyrics will be written into your music library as a sidecar file next to the matched track."
         },
         "musixmatch_user_agent": {
           "type": "string",
@@ -103,6 +113,10 @@
         {
           "type": "Control",
           "scope": "#/properties/musixmatch_captcha_id"
+        },
+        {
+          "type": "Control",
+          "scope": "#/properties/write_fetched_lyrics_as_sidecar_file"
         },
         {
           "type": "Group",

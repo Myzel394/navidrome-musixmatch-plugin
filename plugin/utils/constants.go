@@ -29,6 +29,7 @@ const (
 	ConfigKeyMaxWebsiteCandidateAttempts = "max_website_candidate_attempts"
 	ConfigKeyShareErrors                 = "analytics_share_errors"
 	ConfigKeyShareMetrics                = "analytics_share_metrics"
+	ConfigKeyWriteFetchedLyricsAsSidecar = "write_fetched_lyrics_as_sidecar_file"
 )
 
 const (
@@ -43,6 +44,14 @@ const (
 	OpenObserveOrg        = "default"
 	OpenObserveTraceURL   = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/v1/traces"
 	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
+)
+
+type LyricsFormat int
+
+const (
+	LyricsFormatUnknown LyricsFormat = iota
+	LyricsFormatSyncedLRC
+	LyricsFormatPlain
 )
 
 var (

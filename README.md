@@ -23,11 +23,11 @@ If you are unsure which one to choose, I recommend the [Forgejo releases](https:
 ## Automatically save fetched lyrics
 
 `navidrome-musixmatch-plugin` can automatically save fetched lyrics to your library. It will write lyric files next to the audio files using the extension `.lrc` for synced lyrics and `.txt` for plain lyrics. Example: `Billie Eilish - Happier Than Ever.flac` will have its lyrics saved as `Billie Eilish - Happier Than Ever.lrc` or `Billie Eilish - Happier Than Ever.txt`.
-Lyrics writing is off by default and can be enabled in the Navidrome plugin settings
+Lyrics writing is off by default and can be enabled in the Navidrome plugin settings.
 
-For this to work, make sure your Music library is writable by Navidrome (if you use Docker for example, mount it _without_ `ro` at the end of the volume mount), and in the Navidrome plugin settings under "Library Permissions" enable "Allow write access".
+For this to work, make sure your Music library is writable by Navidrome (if you use Docker for example, mount it _without_ `ro` at the end of the volume mount), and in the Navidrome plugin settings under "Library Permissions", enable "Allow write access".
 
-**IMPORTANT**: `navidrome-musixmatch-plugin` will NOT check for existing lyrics files, it will always fetch lyrics from Musixmatch and overwrite any existing lyrics files. If you want to prioritize existing lyric files, [make sure your lyrics priority list has extensions set _before_ `navidrome-musixmatch-plugin`](https://www.navidrome.org/docs/usage/configuration/options/#opt-lyricspriority), like this:
+**IMPORTANT**: `navidrome-musixmatch-plugin` will NOT check for existing lyric files, it will always fetch lyrics from Musixmatch and overwrite any existing lyric files. If you want to prioritize existing lyric files, [make sure your lyrics priority list has extensions set _before_ `navidrome-musixmatch-plugin`](https://www.navidrome.org/docs/usage/configuration/options/#opt-lyricspriority), like this:
 
 ```env
 ND_LYRICSPRIORITY=.lrc,.txt,embedded,navidrome-musixmatch-plugin,navidrome-shazam-plugin,navidrome-lyricstranslate-plugin

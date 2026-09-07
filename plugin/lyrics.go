@@ -32,7 +32,9 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 		return resp, fmt.Errorf("%s: %w", utils.PluginName, err)
 	}
 
-	lyrics_writer.WriteLyrics(input.Track, resp, format)
+	if utils.ConfigWriteFetchedLyricsAsSidecar() {
+		lyrics_writer.WriteLyrics(input.Track, resp, format)
+	}
 
 	return resp, nil
 }

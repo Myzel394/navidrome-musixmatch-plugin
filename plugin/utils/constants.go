@@ -29,6 +29,7 @@ const (
 	ConfigKeyMaxWebsiteCandidateAttempts = "max_website_candidate_attempts"
 	ConfigKeyShareErrors                 = "analytics_share_errors"
 	ConfigKeyShareMetrics                = "analytics_share_metrics"
+	ConfigKeyWriteFetchedLyricsAsSidecar = "write_fetched_lyrics_as_sidecar_file"
 )
 
 const (

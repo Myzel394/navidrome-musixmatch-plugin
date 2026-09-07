@@ -30,7 +30,7 @@ For this to work, make sure your Music library is writable by Navidrome (if you 
 **IMPORTANT**: `navidrome-musixmatch-plugin` will NOT check for existing lyric files, it will always fetch lyrics from Musixmatch and overwrite any existing lyric files. If you want to prioritize existing lyric files, [make sure your lyrics priority list has extensions set _before_ `navidrome-musixmatch-plugin`](https://www.navidrome.org/docs/usage/configuration/options/#opt-lyricspriority), like this:
 
 ```env
-ND_LYRICSPRIORITY=.lrc,.txt,embedded,navidrome-musixmatch-plugin,navidrome-shazam-plugin,navidrome-lyricstranslate-plugin
+ND_LYRICSPRIORITY=.lrc,.txt,embedded,navidrome-musixmatch-plugin
 ```
 
 ## Optional Website Fallback

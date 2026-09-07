@@ -41,19 +41,19 @@
         },
         "write_fetched_lyrics_as_sidecar_file": {
           "type": "boolean",
-          "title": "Write lyrics sidecar file",
+          "title": "Save lyrics to local files",
           "default": false,
           "description": "When enabled, fetched lyrics will be written into your music library as a sidecar file next to the matched track."
         },
         "musixmatch_user_agent": {
           "type": "string",
-          "title": "User-Agent",
+          "title": "Desktop User-Agent",
           "default": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3 Mobile/15E148 Safari/604.1",
           "description": "User-Agent header sent to MusixMatch. The default mimics mobile Safari."
         },
         "musixmatch_http_accept": {
           "type": "string",
-          "title": "HTTP Accept Header",
+          "title": "Desktop HTTP Accept Header",
           "default": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
           "description": "Accept header sent to Musixmatch."
         },
@@ -107,16 +107,28 @@
       "type": "VerticalLayout",
       "elements": [
         {
-          "type": "Control",
-          "scope": "#/properties/musixmatch_user_token"
+          "type": "Group",
+          "label": "Lyrics",
+          "elements": [
+              {
+                  "type": "Control",
+                  "scope": "#/properties/write_fetched_lyrics_as_sidecar_file"
+              }
+            ]
         },
         {
-          "type": "Control",
-          "scope": "#/properties/musixmatch_captcha_id"
-        },
-        {
-          "type": "Control",
-          "scope": "#/properties/write_fetched_lyrics_as_sidecar_file"
+          "type": "Group",
+          "label": "Musixmatch Website Scraping",
+          "elements": [
+              {
+                  "type": "Control",
+                  "scope": "#/properties/musixmatch_user_token"
+              },
+              {
+                  "type": "Control",
+                  "scope": "#/properties/musixmatch_captcha_id"
+              }
+            ]
         },
         {
           "type": "Group",

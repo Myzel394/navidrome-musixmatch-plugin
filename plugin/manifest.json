@@ -1,7 +1,7 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.3.7",
+  "version": "0.4.0",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
@@ -16,6 +16,10 @@
     },
     "cache": {
       "reason": "To cache anonymous Musixmatch API tokens between lyrics requests"
+    },
+    "library": {
+      "reason": "This permission is required to write the fetched lyrics into music libraries automatically",
+      "filesystem": true
     }
   },
   "config": {

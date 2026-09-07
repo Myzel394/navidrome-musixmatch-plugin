@@ -45,6 +45,14 @@ const (
 	OpenObserveMetricsURL = OpenObserveBaseURL + "/api/" + OpenObserveOrg + "/ingest/metrics/_json"
 )
 
+type LyricsFormat int
+
+const (
+	LyricsFormatUnknown LyricsFormat = iota
+	LyricsFormatSyncedLRC
+	LyricsFormatPlain
+)
+
 var (
 	OpenObserveAttributePluginSource string
 	OpenObserveAttributeVersion      string

@@ -32,6 +32,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, utils
 	}
 
 	// // // Website
+	// Fallback, scrape website
 	if utils.ConfigUserToken() != "" {
 		utils.LogInfof("FetchLyrics: lookup started source=website artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
 		resp, format, err, failure, success := fetchLyricsViaWebsiteScraping(input)

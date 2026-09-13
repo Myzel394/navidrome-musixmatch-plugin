@@ -14,26 +14,31 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	if err != nil {
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
-	var resp macroResponse
-	if err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), assignment, &resp); err != nil {
+
+	// Fetch lyrics from mobile API
+	response, err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), assignment)
+	if err != nil {
 		failure := utils.NewLookupFailure("mobile_macro_request_failed", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
-	utils.LogInfof("mobile API: lyrics response received status=%d body_bytes=%d", resp.Message.Header.StatusCode, len(resp.Message.Body))
-	if resp.Message.Header.StatusCode == utils.HTTPStatusBlocked {
+
+	// Check status
+	utils.LogInfof("mobile API: lyrics response received status=%d body_bytes=%d", response.Message.Header.StatusCode, len(response.Message.Body))
+	if response.Message.Header.StatusCode == utils.HTTPStatusBlocked {
 		err := fmt.Errorf("mobile API returned 401 for lyrics request")
-		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, utils.NewLookupFailure("mobile_blocked", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode), nil
+		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, utils.NewLookupFailure("mobile_blocked", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(response.Message.Header.StatusCode), nil
 	}
-	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(resp.Message.Body)))
-		err := fmt.Errorf("mobile API returned status %d for lyrics request", resp.Message.Header.StatusCode)
-		failure := utils.NewLookupFailure("mobile_macro_status", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(resp.Message.Header.StatusCode)
+	if response.Message.Header.StatusCode != utils.HTTPStatusOK {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(response.Message.Body)))
+		err := fmt.Errorf("mobile API returned status %d for lyrics request", response.Message.Header.StatusCode)
+		failure := utils.NewLookupFailure("mobile_macro_status", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(response.Message.Header.StatusCode)
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
 
+	// Parse
 	var body macroBody
-	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(resp.Message.Body)))
+	if err := json.Unmarshal(response.Message.Body, &body); err != nil {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(response.Message.Body)))
 		failure := utils.NewLookupFailure("mobile_macro_parse", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
@@ -42,6 +47,8 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	if err != nil {
 		utils.LogInfof("mobile API: matched track metadata could not be parsed body_bytes=%d", len(matcherCall.Message.Body))
 	}
+
+	// Check if response matches any lyrics type
 	if err := validateMatchedIdentity(input, meta, "mobile API"); err != nil {
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, nil, nil, nil
 	}
@@ -60,6 +67,8 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	} else if ok {
 		utils.LogInfof("mobile_api: rejected lyrics reason=generated_pseudo_lyrics")
 	}
+
+	// Damn it, that did not work.
 	err = fmt.Errorf("mobile API did not return lyrics")
 	failure = utils.NewLookupFailure("mobile_no_lyrics", "mobile_api", err).WithPhase("mobile_lyrics")
 	return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil

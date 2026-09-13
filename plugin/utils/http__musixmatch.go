@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"maps"
 	"net/url"
 	"strings"
 
@@ -8,13 +9,7 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
-type HTTPResponse struct {
-	Body       []byte
-	StatusCode int
-	Headers    map[string]string
-}
-
-func DoMusixmatchWebsiteGetRequest(endpoint string) (*HTTPResponse, error) {
+func DoMusixmatchWebsiteGetRequest(endpoint string, extraHeaders map[string]string) (*HTTPResponse, error) {
 	userAgent := ConfigUserAgent()
 	httpAcceptHeader := ConfigSearchHTTPAcceptHeader()
 	musixmatchCookie := ConfigUserToken()
@@ -30,16 +25,20 @@ func DoMusixmatchWebsiteGetRequest(endpoint string) (*HTTPResponse, error) {
 		}
 	}
 
+	headers := map[string]string{
+		"Accept":          httpAcceptHeader,
+		"Accept-Language": "en",
+		"User-Agent":      userAgent,
+		"Cookie":          strings.Join(cookies, "; "),
+	}
+
+	maps.Copy(headers, extraHeaders)
+
 	resp, err := host.HTTPSend(host.HTTPRequest{
 		Method:            pdk.MethodGet.String(),
 		URL:               endpoint,
 		NoFollowRedirects: true,
-		Headers: map[string]string{
-			"Accept":          httpAcceptHeader,
-			"Accept-Language": "en",
-			"User-Agent":      userAgent,
-			"Cookie":          strings.Join(cookies, "; "),
-		},
+		Headers:           headers,
 	})
 	if err != nil {
 		return nil, err

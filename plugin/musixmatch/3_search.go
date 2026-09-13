@@ -70,21 +70,21 @@ func _searchForQuery(query, mode string, input lyrics.GetLyricsRequest) ([]*Song
 	endpoint := fmt.Sprintf(utils.MusixmatchSearchPageURL, url.QueryEscape(query))
 	utils.LogInfof("website search: query attempt query_chars=%d", len(query))
 
-	httpResp, err := doMusixmatchWebsiteSearchGetRequest(endpoint)
-	if err != nil || httpResp == nil {
-		utils.LogErrorf("website search: search request failed body_present=%t error=%v", httpResp != nil && httpResp.Body != nil, err)
+	response, err := doMusixmatchWebsiteSearchGetRequest(endpoint, nil)
+	if err != nil || response == nil {
+		utils.LogErrorf("website search: search request failed body_present=%t error=%v", response != nil && response.Body != nil, err)
 		failure := utils.NewLookupFailure("search_request_failed", "website", err).WithPhase("website_search")
 		return nil, err, failure
 	}
-	if err, failure := detectWebsiteGate("search", httpResp); failure != nil {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: blocked response body=%s", string(httpResp.Body)))
+	if err, failure := detectWebsiteGate("search", response); failure != nil {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: blocked response body=%s", string(response.Body)))
 		return nil, err, failure
 	}
-	body := httpResp.Body
-	if httpResp.StatusCode != utils.HTTPStatusOK {
-		utils.LogErrorf("HTTP %d from Musixmatch", httpResp.StatusCode)
+	body := response.Body
+	if response.StatusCode != utils.HTTPStatusOK {
+		utils.LogErrorf("HTTP %d from Musixmatch", response.StatusCode)
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("website search: response body=%s", string(body)))
-		err := &utils.HTTPError{StatusCode: httpResp.StatusCode}
+		err := &utils.HTTPError{StatusCode: response.StatusCode}
 		failure := utils.NewLookupFailure("search_request_failed", "website", err).WithPhase("website_search")
 		return nil, err, failure
 	}

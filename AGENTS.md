@@ -102,3 +102,5 @@ This file follows the `AGENTS.md` convention: a root Markdown file that gives co
 Log stuff using `utils.LogInfof` / `utils.LogErrorf`. For sensitive data, such as the raw responses of HTTP requests, do not log them. Instead log the amount of bytes received. However, you can log the raw response in the Navidrome log using `pdk.Log(pdk.LogDebug, msg)`. This will not be sent to the server, but will be visible in the Navidrome log.
 
 Shared helpers should not accept a source string only to log context. Callers should own source-specific contextual logging around shared helper decisions.
+
+`pdk.NewHTTPRequest` is no longer allowed to be used. Use `host.HTTPSend` instead.

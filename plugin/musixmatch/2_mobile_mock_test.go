@@ -80,9 +80,9 @@ func mockMobileAPI(t *testing.T) {
 			strings.Contains(request.URL, "apic-appmobile.musixmatch.com") &&
 			strings.Contains(request.URL, "token.get") &&
 			strings.Contains(request.URL, "app_id="+utils.DefaultMobileAppID) &&
-			strings.Contains(request.URL, "guid=66697874-7572-452d-a775-69642d303031") &&
+			strings.Contains(request.URL, "guid=xxx") &&
 			strings.Contains(request.URL, "user_language=en") &&
-			strings.Contains(request.Headers["X-Cookie"], "x-mxm-token-guid=66697874-7572-452d-a775-69642d303031")
+			strings.Contains(request.Headers["X-Cookie"], "x-mxm-token-guid=xxx")
 	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: tokenBody}, nil).Once()
 	host.HTTPMock.On("Send", mock.MatchedBy(func(request host.HTTPRequest) bool {
 		return request.Method == pdk.MethodGet.String() &&

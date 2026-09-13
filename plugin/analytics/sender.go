@@ -18,7 +18,7 @@ func sendOpenObserveJSON(endpoint string, payload any) {
 
 	_, err = host.HTTPSend(host.HTTPRequest{
 		Method:            pdk.MethodGet.String(),
-		Body: body,
+		Body:              body,
 		URL:               endpoint,
 		NoFollowRedirects: true,
 		Headers: map[string]string{
@@ -27,7 +27,6 @@ func sendOpenObserveJSON(endpoint string, payload any) {
 			"User-Agent":    utils.PluginName,
 		},
 	})
-
 	if err != nil {
 		utils.LogErrorf("analytics POST failed: %v", err)
 	}

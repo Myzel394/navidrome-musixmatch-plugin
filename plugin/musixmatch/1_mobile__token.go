@@ -22,17 +22,17 @@ func mobileUserToken(assignment mobileGUIDAssignment) (string, error, *utils.Loo
 	if assignment.GUID != "" {
 		query.Set("guid", assignment.GUID)
 	}
-	var resp macroResponse
-	if err := mobileGet("token.get", query, assignment, &resp); err != nil {
+	response, err := mobileGet("token.get", query, assignment)
+	if err != nil {
 		failure := utils.NewLookupFailure("mobile_token_request_failed", "mobile_api", err).WithPhase("mobile_token")
 		return "", err, failure
 	}
-	if resp.Message.Header.StatusCode != utils.HTTPStatusOK {
-		err := fmt.Errorf("mobile API returned status %d while fetching token", resp.Message.Header.StatusCode)
-		return "", err, utils.NewLookupFailure("mobile_token_status", "mobile_api", err).WithPhase("mobile_token").WithStatusCode(resp.Message.Header.StatusCode)
+	if response.Message.Header.StatusCode != utils.HTTPStatusOK {
+		err := fmt.Errorf("mobile API returned status %d while fetching token", response.Message.Header.StatusCode)
+		return "", err, utils.NewLookupFailure("mobile_token_status", "mobile_api", err).WithPhase("mobile_token").WithStatusCode(response.Message.Header.StatusCode)
 	}
 	var body desktopTokenBody
-	if err := json.Unmarshal(resp.Message.Body, &body); err != nil {
+	if err := json.Unmarshal(response.Message.Body, &body); err != nil {
 		return "", err, utils.NewLookupFailure("mobile_token_parse", "mobile_api", err).WithPhase("mobile_token")
 	}
 	if body.UserToken == "" {

@@ -38,7 +38,7 @@ func DoMusixmatchWebsiteGetRequest(endpoint string, extraHeaders map[string]stri
 		Method:            pdk.MethodGet.String(),
 		URL:               endpoint,
 		NoFollowRedirects: true,
-		Headers: headers,
+		Headers:           headers,
 	})
 	if err != nil {
 		return nil, err

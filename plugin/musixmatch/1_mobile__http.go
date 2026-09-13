@@ -46,5 +46,5 @@ func mobileGet(action string, query url.Values, assignment mobileGUIDAssignment)
 		return nil, fmt.Errorf("failed to parse mobile API response for %s: %w", action, err)
 	}
 
-	return response, nil
+	return &response, nil
 }

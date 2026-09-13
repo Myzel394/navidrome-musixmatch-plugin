@@ -9,13 +9,13 @@ import (
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 )
 
-func detectWebsiteGate(phase string, resp *utils.HTTPResponse) (error, *utils.LookupFailure) {
-	if resp == nil {
+func detectWebsiteGate(phase string, response *utils.HTTPResponse) (error, *utils.LookupFailure) {
+	if response == nil {
 		return nil, nil
 	}
 
-	status := resp.StatusCode
-	if location := findHeader(resp.Headers, "Location"); location != "" && status >= 300 && status < 400 {
+	status := response.StatusCode
+	if location := findHeader(response.Headers, "Location"); location != "" && status >= 300 && status < 400 {
 		if isAuthRedirect(location) {
 			return websiteGateFailure(phase, "auth_invalid", status, "auth_redirect")
 		}
@@ -24,10 +24,10 @@ func detectWebsiteGate(phase string, resp *utils.HTTPResponse) (error, *utils.Lo
 		}
 	}
 
-	if isHTMLProbablyAuthPage(resp.Body) {
+	if isHTMLProbablyAuthPage(response.Body) {
 		return websiteGateFailure(phase, "auth_invalid", status, "auth_html")
 	}
-	if isHTMLProbablyCaptchaPage(resp.Body) {
+	if isHTMLProbablyCaptchaPage(response.Body) {
 		return websiteGateFailure(phase, "captcha_required", status, "captcha_html_signature")
 	}
 

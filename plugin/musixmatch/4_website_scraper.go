@@ -11,7 +11,6 @@ import (
 )
 
 func fetchLyricsViaWebsiteScraping(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	// Fallback, scrape website
 	tracks, err, failure := searchForTracks(input)
 	if err == nil {
 		if len(tracks) > 0 {
@@ -61,21 +60,21 @@ func scrapeWebsiteLyricsForTrack(track *Song, input lyrics.GetLyricsRequest) (ly
 
 	utils.LogInfof("website lyrics page: started")
 
-	resp, err := doMusixmatchWebsiteLyricsGetRequest(endpoint)
-	if err != nil || resp == nil {
-		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", resp != nil && resp.Body != nil, err)
+	response, err := doMusixmatchWebsiteLyricsGetRequest(endpoint, nil)
+	if err != nil || response == nil {
+		utils.LogErrorf("website lyrics page: request failed body_present=%t error=%v", response != nil && response.Body != nil, err)
 		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
-	if err, failure := detectWebsiteGate("lyrics_page", resp); failure != nil {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: blocked response body=%s", string(resp.Body)))
+	if err, failure := detectWebsiteGate("lyrics_page", response); failure != nil {
+		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: blocked response body=%s", string(response.Body)))
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
-	body := resp.Body
-	if resp.StatusCode != utils.HTTPStatusOK {
-		utils.LogErrorf("HTTP %d from Musixmatch", resp.StatusCode)
+	body := response.Body
+	if response.StatusCode != utils.HTTPStatusOK {
+		utils.LogErrorf("HTTP %d from Musixmatch", response.StatusCode)
 		pdk.Log(pdk.LogDebug, fmt.Sprintf("website lyrics page: response body=%s", string(body)))
-		err := &utils.HTTPError{StatusCode: resp.StatusCode}
+		err := &utils.HTTPError{StatusCode: response.StatusCode}
 		failure := utils.NewLookupFailure("lyrics_page_request_failed", "website", err).WithPhase("website_lyrics")
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}

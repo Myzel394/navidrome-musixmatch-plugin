@@ -74,29 +74,35 @@ func mockDesktopAPI(t *testing.T) {
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileUserAgent).Return("", false).Maybe()
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppVersion).Return("", false).Maybe()
 	pdk.PDKMock.On("GetConfig", utils.ConfigKeyMobileAppID).Return("", false).Maybe()
-	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "token.get") && strings.Contains(endpoint, "guid=66697874-7572-452d-a775-69642d303031")
-	})).Return(&pdk.HTTPRequest{}).Once()
-	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, tokenBody)).Once()
-	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "apic-appmobile.musixmatch.com") && strings.Contains(endpoint, "macro.subtitles.get") && strings.Contains(endpoint, "q_artist=Billie+Eilish") && strings.Contains(endpoint, "q_duration=213")
-	})).Return(&pdk.HTTPRequest{}).Once()
-	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Once()
-	host.CacheMock.On("GetString", desktopTokenCache).Return("", false, nil).Maybe()
-	host.CacheMock.On("SetString", desktopTokenCache, mock.AnythingOfType("string"), int64(desktopTokenTTL/time.Second)).Return(nil).Maybe()
-	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "apic-desktop.musixmatch.com") && strings.Contains(endpoint, "token.get")
-	})).Return(&pdk.HTTPRequest{}).Maybe()
-	pdk.PDKMock.On("NewHTTPRequest", pdk.MethodGet, mock.MatchedBy(func(endpoint string) bool {
-		return strings.Contains(endpoint, "apic-desktop.musixmatch.com") && strings.Contains(endpoint, "macro.subtitles.get")
-	})).Return(&pdk.HTTPRequest{}).Maybe()
-	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, tokenBody)).Maybe()
-	pdk.PDKMock.On("Send", mock.AnythingOfType("*pdk.HTTPRequest")).Return(pdk.NewStubHTTPResponse(utils.HTTPStatusOK, nil, macroBody)).Maybe()
+	host.HTTPMock.On("Send", mock.MatchedBy(func(request host.HTTPRequest) bool {
+		return request.Method == pdk.MethodGet.String() &&
+			request.NoFollowRedirects &&
+			strings.Contains(request.URL, "apic-appmobile.musixmatch.com") &&
+			strings.Contains(request.URL, "token.get") &&
+			strings.Contains(request.URL, "app_id="+utils.DefaultMobileAppID) &&
+			strings.Contains(request.URL, "guid=66697874-7572-452d-a775-69642d303031") &&
+			strings.Contains(request.URL, "user_language=en") &&
+			strings.Contains(request.Headers["X-Cookie"], "x-mxm-token-guid=66697874-7572-452d-a775-69642d303031")
+	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: tokenBody}, nil).Once()
+	host.HTTPMock.On("Send", mock.MatchedBy(func(request host.HTTPRequest) bool {
+		return request.Method == pdk.MethodGet.String() &&
+			request.NoFollowRedirects &&
+			strings.Contains(request.URL, "apic-appmobile.musixmatch.com") &&
+			strings.Contains(request.URL, "macro.subtitles.get") &&
+			strings.Contains(request.URL, "format=json") &&
+			strings.Contains(request.URL, "app_id="+utils.DefaultMobileAppID) &&
+			strings.Contains(request.URL, "q_artist=Billie+Eilish") &&
+			strings.Contains(request.URL, "q_track=Birds+of+a+Feather") &&
+			strings.Contains(request.URL, "q_duration=213") &&
+			strings.Contains(request.URL, "usertoken=fixture-token")
+	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: macroBody}, nil).Once()
 
 	t.Cleanup(func() {
 		mobileExperimentRandomReader = originalReader
 		host.CacheMock.ExpectedCalls = nil
 		host.CacheMock.Calls = nil
+		host.HTTPMock.ExpectedCalls = nil
+		host.HTTPMock.Calls = nil
 		pdk.PDKMock.ExpectedCalls = nil
 		pdk.PDKMock.Calls = nil
 	})

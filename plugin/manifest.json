@@ -1,7 +1,7 @@
 {
   "name": "Musixmatch Plugin",
   "author": "Myzel394",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Scrape lyrics from MusixMatch",
   "website": "https://git.nerdvpn.de/Myzel394/navidrome-musixmatch-plugin",
   "permissions": {
@@ -41,7 +41,7 @@
         },
         "write_fetched_lyrics_as_sidecar_file": {
           "type": "boolean",
-          "title": "Save lyrics to local files",
+          "title": "Write lyrics to local sidecar file",
           "default": false,
           "description": "When enabled, fetched lyrics will be written into your music library as a sidecar file next to the matched track."
         },
@@ -108,7 +108,7 @@
       "elements": [
         {
           "type": "Group",
-          "label": "Lyrics",
+          "label": "Lyrics File Writing",
           "elements": [
               {
                   "type": "Control",

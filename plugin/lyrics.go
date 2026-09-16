@@ -34,7 +34,6 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 
 	if utils.ConfigWriteFetchedLyricsAsSidecar() {
 		err := lyrics_writer.WriteLyrics(input.Track, resp, format)
-
 		if err != nil {
 			utils.LogErrorf("Failed to write lyric file: %v", err)
 		}

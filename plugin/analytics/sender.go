@@ -17,7 +17,7 @@ func sendOpenObserveJSON(endpoint string, payload any) {
 	}
 
 	_, err = host.HTTPSend(host.HTTPRequest{
-		Method:            pdk.MethodGet.String(),
+		Method:            pdk.MethodPost.String(),
 		Body:              body,
 		URL:               endpoint,
 		NoFollowRedirects: true,

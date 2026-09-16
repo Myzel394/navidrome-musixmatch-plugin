@@ -21,8 +21,6 @@ type mobileGUIDAssignment struct {
 var mobileExperimentRandomReader io.Reader = rand.Reader
 
 func chooseMobileGUIDAssignment() mobileGUIDAssignment {
-	return mobileGUIDAssignment{Variant: mobileGUIDVariantNone}
-
 	var bit [1]byte
 	if _, err := io.ReadFull(mobileExperimentRandomReader, bit[:]); err != nil {
 		utils.LogErrorf("mobile API GUID experiment random selection failed: %v", err)

@@ -17,6 +17,9 @@ type macroHeader struct {
 	StatusCode int `json:"status_code"`
 }
 
+// `macro.subtitles.get` is one request that runs several Musixmatch API calls
+// on the server (matched track, synced lyrics, plain lyrics). Each call's result
+// is in `MacroCalls`, keyed by method name such as `track.subtitles.get`.
 type macroBody struct {
 	MacroCalls map[string]macroResponse `json:"macro_calls"`
 }

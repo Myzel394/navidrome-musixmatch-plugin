@@ -1,5 +1,26 @@
 # Musixmatch internals
 
+## Mobile API hint
+
+The mobile fetcher mimics Musixmatch's iOS app at
+`apic-appmobile.musixmatch.com/ws/1.1` (`app_id=mac-ios-v2.0`). All Musixmatch
+gateways — the official `api.musixmatch.com` (paid `apikey`), the desktop
+gateway below, and this mobile one — expose the same `ws/1.1` methods and
+`message.header`/`message.body` envelope; the unofficial gateways just
+authenticate with an anonymous `usertoken` from `token.get` instead.
+
+`track.search` (`1_mobile__search.go`) is Musixmatch's documented catalog
+search (`q_track`, `q_artist`, `f_has_lyrics`, `page`, `page_size`). It returns
+track metadata only, never lyrics. The lookup runs it first to enumerate
+Musixmatch's duplicate entries per song, orders them by how close their length
+is to the requested track, then fetches them by `track_id` with
+`macro.subtitles.get`, stopping at the first synced lyrics and only using plain
+lyrics if no entry has synced ones — the same search-then-fetch pattern used
+by lyrics clients such as syncedlyrics. Only when the search yields no usable
+track ID, or every track lookup fails, does the plugin fall back to a
+query-based `macro.subtitles.get` call that lets the server-side matcher pick
+the track.
+
 ## Desktop API hint
 
 The desktop fetcher mimics Musixmatch's

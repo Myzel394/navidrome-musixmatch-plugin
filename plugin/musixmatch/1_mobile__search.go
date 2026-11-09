@@ -1,7 +1,10 @@
 package musixmatch
 
 import (
+	"cmp"
 	"encoding/json"
+	"math"
+	"slices"
 
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
@@ -20,6 +23,7 @@ type mobileSearchTrack struct {
 	TrackName    string     `json:"track_name"`
 	ArtistName   string     `json:"artist_name"`
 	AlbumName    string     `json:"album_name"`
+	TrackLength  int        `json:"track_length"`
 	HasLyrics    mobileBool `json:"has_lyrics"`
 	Instrumental mobileBool `json:"instrumental"`
 }
@@ -58,12 +62,14 @@ func searchMobileTrackIDs(input lyrics.GetLyricsRequest, token string, assignmen
 	return filterMobileTrackIDs(input, body)
 }
 
-// Reduces search results to the track IDs worth fetching lyrics for, keeping
-// the search order. Skips duplicates, entries without lyrics, instrumentals,
-// and entries whose identity does not match the requested track. Stops at
+// Reduces search results to the track IDs worth fetching lyrics for. Skips
+// duplicates, entries without lyrics, instrumentals, and entries whose identity
+// does not match the requested track. The rest are ordered by how close their
+// length is to the requested track, because the same title can be a live or
+// extended version whose synced lyrics would drift. Keeps at most
 // `mobileCandidateSweepLimit`, since each returned ID costs one request.
 func filterMobileTrackIDs(input lyrics.GetLyricsRequest, body mobileSearchBody) []int {
-	trackIDs := make([]int, 0, mobileCandidateSweepLimit)
+	tracks := make([]mobileSearchTrack, 0, len(body.TrackList))
 	seen := map[int]bool{}
 	for _, item := range body.TrackList {
 		track := item.Track
@@ -78,10 +84,34 @@ func filterMobileTrackIDs(input lyrics.GetLyricsRequest, body mobileSearchBody) 
 		if err := validateMatchedIdentity(input, meta, "mobile API candidates"); err != nil {
 			continue
 		}
-		trackIDs = append(trackIDs, track.TrackID)
+		tracks = append(tracks, track)
+	}
+
+	sortMobileTracksByLengthDifference(tracks, float64(input.Track.Duration))
+
+	trackIDs := make([]int, 0, mobileCandidateSweepLimit)
+	for _, track := range tracks {
 		if len(trackIDs) >= mobileCandidateSweepLimit {
 			break
 		}
+		trackIDs = append(trackIDs, track.TrackID)
 	}
 	return trackIDs
+}
+
+// Keeps the search order for tracks that are equally close, and for every track
+// when the requested duration is unknown. Tracks of unknown length go last.
+func sortMobileTracksByLengthDifference(tracks []mobileSearchTrack, duration float64) {
+	if duration <= 0 {
+		return
+	}
+	lengthDifference := func(track mobileSearchTrack) float64 {
+		if track.TrackLength <= 0 {
+			return math.Inf(1)
+		}
+		return math.Abs(float64(track.TrackLength) - duration)
+	}
+	slices.SortStableFunc(tracks, func(a, b mobileSearchTrack) int {
+		return cmp.Compare(lengthDifference(a), lengthDifference(b))
+	})
 }

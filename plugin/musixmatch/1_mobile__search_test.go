@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -162,6 +163,117 @@ func TestFetchLyricsPicksLyricsAcrossTracks(t *testing.T) {
 			host.HTTPMock.AssertExpectations(t)
 		})
 	}
+}
+
+func TestFilterMobileTrackIDsOrdersByLengthDifference(t *testing.T) {
+	tests := []struct {
+		name     string
+		duration float32
+		lengths  []int
+		want     []int
+	}{
+		{"closest length first", 391, []int{423, 420, 391, 380}, []int{3, 4, 2, 1}},
+		{"ties keep search order", 100, []int{90, 110, 100}, []int{3, 1, 2}},
+		{"no duration keeps search order", 0, []int{423, 391}, []int{1, 2}},
+		{"unknown length goes last", 391, []int{0, 500}, []int{2, 1}},
+		{"sorted before limit", 200, []int{100, 110, 120, 130, 140, 200}, []int{6, 5, 4, 3, 2}},
+	}
+	pdk.PDKMock.On("Log", mock.Anything, mock.Anything).Return().Maybe()
+	t.Cleanup(func() {
+		pdk.PDKMock.ExpectedCalls = nil
+		pdk.PDKMock.Calls = nil
+	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			trackList := make([]any, 0, len(test.lengths))
+			for i, length := range test.lengths {
+				trackList = append(trackList, map[string]any{"track": map[string]any{"track_id": i + 1, "track_name": "Story Time", "artist_name": "Fivio Foreign", "track_length": length, "has_lyrics": 1, "instrumental": 0}})
+			}
+			data, err := json.Marshal(map[string]any{"track_list": trackList})
+			if err != nil {
+				t.Fatalf("could not build search fixture: %v", err)
+			}
+			var body mobileSearchBody
+			if err := json.Unmarshal(data, &body); err != nil {
+				t.Fatalf("could not parse search fixture: %v", err)
+			}
+
+			got := filterMobileTrackIDs(lyrics.GetLyricsRequest{
+				Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: test.duration},
+			}, body)
+			if !slices.Equal(got, test.want) {
+				t.Fatalf("expected track IDs %v, got %v", test.want, got)
+			}
+		})
+	}
+}
+
+var blockedMacroFixture = []byte(`{"message":{"header":{"status_code":401},"body":""}}`)
+
+func mockStoryTimeQueryMacro(body []byte) {
+	host.HTTPMock.On("Send", mock.MatchedBy(func(request host.HTTPRequest) bool {
+		return strings.Contains(request.URL, "macro.subtitles.get") &&
+			strings.Contains(request.URL, "q_track=Story+Time") &&
+			!strings.Contains(request.URL, "track_id=")
+	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: body}, nil).Once()
+}
+
+func TestFetchLyricsRunsQueryWhenEveryTrackLookupFails(t *testing.T) {
+	mockStoryTimeToken(t)
+	mockStoryTimeSearch(t, 224027345)
+	mockStoryTimeMacro(224027345, blockedMacroFixture)
+	mockStoryTimeQueryMacro(macroResponseJSON(t, "[00:01.00] synced line\n", ""))
+
+	resp, format, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
+	})
+	if err != nil || failure != nil || success == nil {
+		t.Fatalf("expected success, got err=%v failure=%v success=%v", err, failure, success)
+	}
+	if format != utils.LyricsFormatSyncedLRC {
+		t.Fatalf("expected synced LRC format, got %v", format)
+	}
+	if !strings.Contains(resp.Lyrics[0].Text, "synced line") {
+		t.Fatalf("expected query lyrics, got %q", resp.Lyrics[0].Text)
+	}
+	host.HTTPMock.AssertExpectations(t)
+}
+
+func TestFetchLyricsReportsBlockWhenQueryIsBlockedToo(t *testing.T) {
+	mockStoryTimeToken(t)
+	mockStoryTimeSearch(t, 224027345)
+	mockStoryTimeMacro(224027345, blockedMacroFixture)
+	mockStoryTimeQueryMacro(blockedMacroFixture)
+
+	_, _, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
+	})
+	if err == nil || success != nil {
+		t.Fatalf("expected an error, got err=%v success=%v", err, success)
+	}
+	if failure.ReasonValue() != "mobile_blocked" {
+		t.Fatalf("expected reason mobile_blocked, got %q", failure.ReasonValue())
+	}
+	host.HTTPMock.AssertExpectations(t)
+}
+
+// The query call has no mock here, so running it would panic.
+func TestFetchLyricsSkipsQueryWhenATrackLookupSucceeds(t *testing.T) {
+	mockStoryTimeToken(t)
+	mockStoryTimeSearch(t, 224027345, 223175197)
+	mockStoryTimeMacro(224027345, blockedMacroFixture)
+	mockStoryTimeMacro(223175197, macroResponseJSON(t, "", ""))
+
+	_, _, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
+	})
+	if err == nil || success != nil {
+		t.Fatalf("expected an error, got err=%v success=%v", err, success)
+	}
+	if failure.ReasonValue() != "mobile_no_lyrics" {
+		t.Fatalf("expected reason mobile_no_lyrics, got %q", failure.ReasonValue())
+	}
+	host.HTTPMock.AssertExpectations(t)
 }
 
 const poisonedLyricsFixture = "[00:01.00] wob gopini den tefe woxica fero gogoh vudob wiya\n"

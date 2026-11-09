@@ -16,12 +16,6 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	trackIDs := searchMobileTrackIDs(input, token, assignment)
 	utils.LogInfof("mobile API: search resolved track_ids=%d", len(trackIDs))
 
-	// No track ID found: fall back to a query-based macro call and let the
-	// server-side matcher pick the track.
-	if len(trackIDs) == 0 {
-		return fetchMobileLyricsByQuery(input, token, assignment)
-	}
-
 	// Stop at the first synced lyrics. Plain lyrics are only used once no track
 	// has synced ones, so those macros are kept until every track was tried.
 	macros := make([]macroBody, 0, len(trackIDs))
@@ -35,6 +29,13 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 			return resp, utils.LyricsFormatSyncedLRC, nil, nil, utils.NewLookupSuccess("mobile_synced")
 		}
 		macros = append(macros, macro)
+	}
+
+	// The search found no track, or every track lookup failed. Fall back to a
+	// query-based macro call and let the server-side matcher pick the track. If
+	// the API is blocking us, this call reports that as the actual failure.
+	if len(macros) == 0 {
+		return fetchMobileLyricsByQuery(input, token, assignment)
 	}
 	return findBestPlainLyrics(macros)
 }

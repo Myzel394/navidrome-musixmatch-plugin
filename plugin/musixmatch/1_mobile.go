@@ -1,12 +1,8 @@
 package musixmatch
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"github.com/Myzel394/navidrome-musixmatch-plugin/plugin/utils"
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
-	"github.com/navidrome/navidrome/plugins/pdk/go/pdk"
 )
 
 func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGUIDAssignment) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
@@ -15,33 +11,41 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
 
-	// Fetch lyrics from mobile API
-	response, err := mobileGet("macro.subtitles.get", buildMobileLyricsQuery(input, token), assignment)
+	// Resolve explicit track IDs first, so lyrics are fetched for known catalog
+	// entries instead of whichever duplicate the server-side matcher picks.
+	trackIDs := searchMobileTrackIDs(input, token, assignment)
+	utils.LogInfof("mobile API: search resolved track_ids=%d", len(trackIDs))
+
+	// Stop at the first synced lyrics. Plain lyrics are only used once no track
+	// has synced ones, so those macros are kept until every track was tried.
+	macros := make([]macroBody, 0, len(trackIDs))
+	for _, trackID := range trackIDs {
+		macro, err, failure := mobileGetMacro(buildMobileTrackLyricsQuery(trackID, token), assignment)
+		if err != nil {
+			utils.LogInfof("mobile API: track macro failed track_id=%d reason=%s error=%v", trackID, failure.ReasonValue(), err)
+			continue
+		}
+		if resp, ok := getSyncedLyricsFromMacro(macro); ok {
+			return resp, utils.LyricsFormatSyncedLRC, nil, nil, utils.NewLookupSuccess("mobile_synced")
+		}
+		macros = append(macros, macro)
+	}
+
+	// The search found no track, or every track lookup failed. Fall back to a
+	// query-based macro call and let the server-side matcher pick the track. If
+	// the API is blocking us, this call reports that as the actual failure.
+	if len(macros) == 0 {
+		return fetchMobileLyricsByQuery(input, token, assignment)
+	}
+	return findBestPlainLyrics(macros)
+}
+
+func fetchMobileLyricsByQuery(input lyrics.GetLyricsRequest, token string, assignment mobileGUIDAssignment) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	body, err, failure := mobileGetMacro(buildMobileLyricsQuery(input, token), assignment)
 	if err != nil {
-		failure := utils.NewLookupFailure("mobile_macro_request_failed", "mobile_api", err).WithPhase("mobile_lyrics")
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
 
-	// Check status
-	utils.LogInfof("mobile API: lyrics response received status=%d body_bytes=%d", response.Message.Header.StatusCode, len(response.Message.Body))
-	if response.Message.Header.StatusCode == utils.HTTPStatusBlocked {
-		err := fmt.Errorf("mobile API returned 401 for lyrics request")
-		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, utils.NewLookupFailure("mobile_blocked", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(response.Message.Header.StatusCode), nil
-	}
-	if response.Message.Header.StatusCode != utils.HTTPStatusOK {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(response.Message.Body)))
-		err := fmt.Errorf("mobile API returned status %d for lyrics request", response.Message.Header.StatusCode)
-		failure := utils.NewLookupFailure("mobile_macro_status", "mobile_api", err).WithPhase("mobile_lyrics").WithStatusCode(response.Message.Header.StatusCode)
-		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
-	}
-
-	// Parse
-	var body macroBody
-	if err := json.Unmarshal(response.Message.Body, &body); err != nil {
-		pdk.Log(pdk.LogDebug, fmt.Sprintf("mobile API: lyrics response body=%s", string(response.Message.Body)))
-		failure := utils.NewLookupFailure("mobile_macro_parse", "mobile_api", err).WithPhase("mobile_lyrics")
-		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
-	}
 	matcherCall := body.MacroCalls["matcher.track.get"]
 	meta, err := parseResponseToTrackMetadata(matcherCall)
 	if err != nil {
@@ -52,24 +56,8 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	if err := validateMatchedIdentity(input, meta, "mobile API"); err != nil {
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, nil, nil, nil
 	}
-	if resp, ok := lyricsFromRichsync(body.MacroCalls["track.richsync.get"]); ok && lyricsResponseAllowed(resp) {
+	if resp, ok := getSyncedLyricsFromMacro(body); ok {
 		return resp, utils.LyricsFormatSyncedLRC, nil, nil, utils.NewLookupSuccess("mobile_synced")
-	} else if ok {
-		utils.LogInfof("mobile_api: rejected lyrics reason=generated_pseudo_lyrics")
 	}
-	if resp, ok := lyricsFromSubtitle(body.MacroCalls["track.subtitles.get"]); ok && lyricsResponseAllowed(resp) {
-		return resp, utils.LyricsFormatSyncedLRC, nil, nil, utils.NewLookupSuccess("mobile_synced")
-	} else if ok {
-		utils.LogInfof("mobile_api: rejected lyrics reason=generated_pseudo_lyrics")
-	}
-	if resp, ok := lyricsFromPlain(body.MacroCalls["track.lyrics.get"]); ok && lyricsResponseAllowed(resp) {
-		return resp, utils.LyricsFormatPlain, nil, nil, utils.NewLookupSuccess("mobile_plain")
-	} else if ok {
-		utils.LogInfof("mobile_api: rejected lyrics reason=generated_pseudo_lyrics")
-	}
-
-	// Damn it, that did not work.
-	err = fmt.Errorf("mobile API did not return lyrics")
-	failure = utils.NewLookupFailure("mobile_no_lyrics", "mobile_api", err).WithPhase("mobile_lyrics")
-	return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
+	return findBestPlainLyrics([]macroBody{body})
 }

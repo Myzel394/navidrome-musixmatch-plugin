@@ -32,6 +32,7 @@ func WriteLyrics(
 		utils.LogErrorf("Failed to write lyrics file! Make sure you have \"Allow write access\" set! Got the error: %v", err)
 		return err
 	}
+	defer lyricsFile.Close()
 
 	_, err = lyricsFile.WriteString(lyrics.Lyrics[0].Text)
 	if err != nil {

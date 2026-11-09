@@ -26,13 +26,12 @@ func (p *plugin) GetLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRespo
 
 	logs := utils.StopLogCapture()
 	analytics.ReportLyricsLookup(input, resp, err, failure, success, mobileGUIDVariant, startedAt, duration, logs)
-	print(fmt.Sprintf("%v", err))
 
 	if err != nil {
 		return resp, fmt.Errorf("%s: %w", utils.PluginName, err)
 	}
 
-	if utils.ConfigWriteFetchedLyricsAsSidecar() {
+	if utils.ConfigWriteFetchedLyricsAsSidecar() && len(resp.Lyrics) > 0 {
 		err := lyrics_writer.WriteLyrics(input.Track, resp, format)
 		if err != nil {
 			utils.LogErrorf("Failed to write lyric file: %v", err)

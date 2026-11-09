@@ -7,6 +7,25 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
 
+// Richsync times each word (JSON, only returned with
+// `optional_calls=track.richsync`), subtitles time each line (LRC). Richsync is
+// preferred, with subtitles as the fallback. Both end up as line-by-line LRC,
+// because `lyricsFromRichsync` only keeps each line's start time and text.
+//
+// Subtitle:
+//
+//	[00:01.00]First line of the song
+//	[00:04.50]Second line of the song
+//
+// Richsync, one object per line (`ts`/`te` are the line's start and end, `o` is
+// each word's offset from the line's start):
+//
+//	{
+//	  "ts": 1.0,
+//	  "te": 4.5,
+//	  "x": "First line of the song",
+//	  "l": [{ "c": "First", "o": 0.0 }, { "c": "line", "o": 0.4 }]
+//	}
 func getSyncedLyricsFromMacro(macro macroBody) (lyrics.GetLyricsResponse, bool) {
 	if resp, ok := lyricsFromRichsync(macro.MacroCalls["track.richsync.get"]); ok && !isPoisonedLyrics(resp) {
 		return resp, true

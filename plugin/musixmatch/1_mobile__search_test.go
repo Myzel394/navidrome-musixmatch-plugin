@@ -426,6 +426,7 @@ func mockStoryTimeSearch(t *testing.T, trackIDs ...int) {
 func mockStoryTimeMacro(trackID int, body []byte) {
 	host.HTTPMock.On("Send", mock.MatchedBy(func(request host.HTTPRequest) bool {
 		return strings.Contains(request.URL, "macro.subtitles.get") &&
+			strings.Contains(request.URL, "optional_calls=track.richsync") &&
 			strings.Contains(request.URL, fmt.Sprintf("track_id=%d", trackID))
 	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: body}, nil).Once()
 }

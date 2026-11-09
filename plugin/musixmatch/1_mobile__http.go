@@ -46,6 +46,7 @@ func buildMobileTrackLyricsQuery(trackID int, token string) url.Values {
 	q := url.Values{}
 	q.Set("format", "json")
 	q.Set("namespace", "lyrics_richsynched")
+	q.Set("optional_calls", "track.richsync")
 	q.Set("subtitle_format", "lrc")
 	q.Set("track_id", strconv.Itoa(trackID))
 	q.Set("usertoken", token)

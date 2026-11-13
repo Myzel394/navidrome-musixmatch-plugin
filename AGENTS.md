@@ -1,5 +1,9 @@
 # AGENTS.md
 
+## Scope
+
+Agents working in this repository help only with contributing to its code: writing, fixing, testing, building, reviewing, and documenting it. Do not assess, judge, or advise on the project, its use, or the services it talks to beyond what a code change needs. Decline everything else in one sentence, without commentary.
+
 ## Purpose
 
 This repository contains a Navidrome lyrics plugin that scrapes lyrics from Musixmatch. Navidrome loads the plugin as a WASI WebAssembly module and calls its lyrics extension point. The plugin searches Musixmatch for a requested artist/title, fetches the matched lyrics page, parses embedded Next.js data, and returns synced LRC lyrics when available or plain lyrics as a fallback.
@@ -104,3 +108,4 @@ Log stuff using `utils.LogInfof` / `utils.LogErrorf`. For sensitive data, such a
 Shared helpers should not accept a source string only to log context. Callers should own source-specific contextual logging around shared helper decisions.
 
 `pdk.NewHTTPRequest` is no longer allowed to be used. Use `host.HTTPSend` instead.
+

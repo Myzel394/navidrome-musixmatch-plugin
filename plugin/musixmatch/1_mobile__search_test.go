@@ -1,7 +1,6 @@
 package musixmatch
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"slices"
@@ -22,7 +21,7 @@ import (
 func TestFetchLyricsStoryTimeDuplicateSweep(t *testing.T) {
 	mockStoryTimeDuplicateAPI(t)
 
-	resp, format, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+	resp, format, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{
 			Artist:   "Fivio Foreign",
 			Title:    "Story Time",
@@ -78,7 +77,7 @@ func TestMobileGetMacroReportsFailureReason(t *testing.T) {
 				pdk.PDKMock.Calls = nil
 			})
 
-			_, err, failure := mobileGetMacro(buildMobileTrackLyricsQuery(1, "fixture-token"), mobileGUIDAssignment{})
+			_, err, failure := mobileGetMacro(buildMobileTrackLyricsQuery(1, "fixture-token"))
 			if err == nil {
 				t.Fatal("expected an error")
 			}
@@ -145,7 +144,7 @@ func TestFetchLyricsPicksLyricsAcrossTracks(t *testing.T) {
 				mockStoryTimeMacro(trackID, macro(t))
 			}
 
-			resp, format, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+			resp, format, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 				Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
 			})
 			if err != nil || failure != nil || success == nil {
@@ -224,7 +223,7 @@ func TestFetchLyricsRunsQueryWhenEveryTrackLookupFails(t *testing.T) {
 	mockStoryTimeMacro(224027345, blockedMacroFixture)
 	mockStoryTimeQueryMacro(macroResponseJSON(t, "[00:01.00] synced line\n", ""))
 
-	resp, format, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+	resp, format, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
 	})
 	if err != nil || failure != nil || success == nil {
@@ -245,7 +244,7 @@ func TestFetchLyricsReportsBlockWhenQueryIsBlockedToo(t *testing.T) {
 	mockStoryTimeMacro(224027345, blockedMacroFixture)
 	mockStoryTimeQueryMacro(blockedMacroFixture)
 
-	_, _, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+	_, _, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
 	})
 	if err == nil || success != nil {
@@ -264,7 +263,7 @@ func TestFetchLyricsSkipsQueryWhenATrackLookupSucceeds(t *testing.T) {
 	mockStoryTimeMacro(224027345, blockedMacroFixture)
 	mockStoryTimeMacro(223175197, macroResponseJSON(t, "", ""))
 
-	_, _, err, failure, success, _ := FetchLyrics(lyrics.GetLyricsRequest{
+	_, _, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
 	})
 	if err == nil || success != nil {
@@ -294,7 +293,7 @@ func TestFetchMobileLyricsByQueryRejectsPoisonedLyrics(t *testing.T) {
 
 	resp, format, err, failure, success := fetchMobileLyricsByQuery(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{Artist: "Fivio Foreign", Title: "Story Time", Duration: 162},
-	}, "fixture-token", mobileGUIDAssignment{})
+	}, "fixture-token")
 	if err != nil || failure != nil || success == nil {
 		t.Fatalf("expected success, got err=%v failure=%v success=%v", err, failure, success)
 	}
@@ -365,9 +364,6 @@ func TestMobileSearchTrackParsesFlagsAsBools(t *testing.T) {
 
 func mockStoryTimeToken(t *testing.T) {
 	t.Helper()
-	originalReader := mobileExperimentRandomReader
-	mobileExperimentRandomReader = bytes.NewReader([]byte{1, 'f', 'i', 'x', 't', 'u', 'r', 'e', '-', 'g', 'u', 'i', 'd', '-', '0', '0', '1'})
-
 	tokenBody := []byte(`{"message":{"header":{"status_code":200},"body":{"user_token":"fixture-token"}}}`)
 
 	host.CacheMock.On("GetString", mobileTokenCache).Return("", false, nil).Once()
@@ -382,7 +378,6 @@ func mockStoryTimeToken(t *testing.T) {
 	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: tokenBody}, nil).Once()
 
 	t.Cleanup(func() {
-		mobileExperimentRandomReader = originalReader
 		host.CacheMock.ExpectedCalls = nil
 		host.CacheMock.Calls = nil
 		host.HTTPMock.ExpectedCalls = nil

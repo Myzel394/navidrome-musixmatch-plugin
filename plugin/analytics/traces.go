@@ -39,7 +39,6 @@ func reportLookupFailureTrace(lookup lookupAnalytics) {
 			otlpStringAttr("track.title", lookup.Input.Track.Title),
 			otlpStringAttr("track.mbz_recording_id", lookup.Input.Track.MBZRecordingID),
 			otlpBoolAttr("config.has_musixmatch_user_token", utils.ConfigUserToken() != ""),
-			otlpStringAttr("mobile_guid_variant", lookup.MobileGUIDVariant),
 
 			otlpStringAttr("plugin.source", utils.OpenObserveAttributePluginSource),
 			otlpStringAttr("plugin.version", utils.OpenObserveAttributeVersion),

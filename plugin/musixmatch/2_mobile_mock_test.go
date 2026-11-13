@@ -1,7 +1,6 @@
 package musixmatch
 
 import (
-	"bytes"
 	"encoding/json"
 	"strings"
 	"testing"
@@ -17,7 +16,7 @@ import (
 func TestFetchLyricsBirdsOfAFeatherMobileMock(t *testing.T) {
 	mockMobileAPI(t)
 
-	resp, format, err, failure, success, variant := FetchLyrics(lyrics.GetLyricsRequest{
+	resp, format, err, failure, success := FetchLyrics(lyrics.GetLyricsRequest{
 		Track: lyrics.TrackInfo{
 			Artist:   "Billie Eilish",
 			Title:    "Birds of a Feather",
@@ -32,9 +31,6 @@ func TestFetchLyricsBirdsOfAFeatherMobileMock(t *testing.T) {
 	}
 	if success == nil {
 		t.Fatal("expected success metadata")
-	}
-	if variant != mobileGUIDVariantRandom {
-		t.Fatalf("expected random_guid variant, got %q", variant)
 	}
 	if len(resp.Lyrics) == 0 {
 		t.Fatal("expected at least one lyrics result")
@@ -61,9 +57,6 @@ func TestFetchLyricsBirdsOfAFeatherMobileMock(t *testing.T) {
 
 func mockMobileAPI(t *testing.T) {
 	t.Helper()
-	originalReader := mobileExperimentRandomReader
-	mobileExperimentRandomReader = bytes.NewReader([]byte{1, 'f', 'i', 'x', 't', 'u', 'r', 'e', '-', 'g', 'u', 'i', 'd', '-', '0', '0', '1'})
-
 	tokenBody := []byte(`{"message":{"header":{"status_code":200},"body":{"user_token":"fixture-token"}}}`)
 	macroBody := mobileFirstMacroFixture(t)
 
@@ -103,7 +96,6 @@ func mockMobileAPI(t *testing.T) {
 	})).Return(&host.HTTPResponse{StatusCode: int32(utils.HTTPStatusOK), Body: macroBody}, nil).Once()
 
 	t.Cleanup(func() {
-		mobileExperimentRandomReader = originalReader
 		host.CacheMock.ExpectedCalls = nil
 		host.CacheMock.Calls = nil
 		host.HTTPMock.ExpectedCalls = nil

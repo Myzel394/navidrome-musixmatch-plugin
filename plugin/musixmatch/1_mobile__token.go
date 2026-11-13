@@ -10,7 +10,7 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/host"
 )
 
-func mobileUserToken(assignment mobileGUIDAssignment) (string, error, *utils.LookupFailure) {
+func mobileUserToken() (string, error, *utils.LookupFailure) {
 	if token, ok, err := host.CacheGetString(mobileTokenCache); err != nil {
 		utils.LogErrorf("mobile API token cache read failed: %v", err)
 	} else if ok && token != "" {
@@ -19,10 +19,7 @@ func mobileUserToken(assignment mobileGUIDAssignment) (string, error, *utils.Loo
 	}
 	query := url.Values{}
 	query.Set("user_language", "en")
-	if assignment.GUID != "" {
-		query.Set("guid", assignment.GUID)
-	}
-	response, err := mobileGet("token.get", query, assignment)
+	response, err := mobileGet("token.get", query)
 	if err != nil {
 		failure := utils.NewLookupFailure("mobile_token_request_failed", "mobile_api", err).WithPhase("mobile_token")
 		return "", err, failure

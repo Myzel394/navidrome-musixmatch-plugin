@@ -53,14 +53,10 @@ func buildMobileTrackLyricsQuery(trackID int, token string) url.Values {
 	return q
 }
 
-func mobileGet(action string, query url.Values, assignment mobileGUIDAssignment) (*macroResponse, error) {
+func mobileGet(action string, query url.Values) (*macroResponse, error) {
 	query.Set("app_id", utils.ConfigMobileAppID())
 	query.Set("t", strconv.FormatInt(time.Now().UnixMilli(), 10))
-	headerOverrides := map[string]string{}
-	if assignment.GUID != "" {
-		headerOverrides["X-Cookie"] = "x-mxm-token-guid=" + assignment.GUID
-	}
-	body, err := utils.DoMobileGetRequest(fmt.Sprintf(utils.MusixmatchMobileAPIURL, action)+"?"+query.Encode(), headerOverrides)
+	body, err := utils.DoMobileGetRequest(fmt.Sprintf(utils.MusixmatchMobileAPIURL, action) + "?" + query.Encode())
 	if err != nil {
 		return nil, err
 	}
@@ -73,8 +69,8 @@ func mobileGet(action string, query url.Values, assignment mobileGUIDAssignment)
 	return &response, nil
 }
 
-func mobileGetMacro(query url.Values, assignment mobileGUIDAssignment) (macroBody, error, *utils.LookupFailure) {
-	response, err := mobileGet("macro.subtitles.get", query, assignment)
+func mobileGetMacro(query url.Values) (macroBody, error, *utils.LookupFailure) {
+	response, err := mobileGet("macro.subtitles.get", query)
 	if err != nil {
 		failure := utils.NewLookupFailure("mobile_macro_request_failed", "mobile_api", err).WithPhase("mobile_lyrics")
 		return macroBody{}, err, failure

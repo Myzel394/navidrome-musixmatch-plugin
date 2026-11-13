@@ -42,8 +42,8 @@ func (b *mobileBool) UnmarshalJSON(data []byte) error {
 // per song (plain vs synced, solo vs feat. credit), so searching reveals every
 // duplicate and lets lyrics be fetched per explicit `track_id` instead of
 // trusting the server-side matcher to pick the right entry.
-func searchMobileTrackIDs(input lyrics.GetLyricsRequest, token string, assignment mobileGUIDAssignment) []int {
-	response, err := mobileGet("track.search", buildMobileSearchQuery(input, token), assignment)
+func searchMobileTrackIDs(input lyrics.GetLyricsRequest, token string) []int {
+	response, err := mobileGet("track.search", buildMobileSearchQuery(input, token))
 	if err != nil {
 		utils.LogInfof("mobile API: candidate search request failed error=%v", err)
 		return nil

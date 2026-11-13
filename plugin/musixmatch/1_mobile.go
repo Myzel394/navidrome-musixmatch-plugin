@@ -5,22 +5,22 @@ import (
 	"github.com/navidrome/navidrome/plugins/pdk/go/lyrics"
 )
 
-func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGUIDAssignment) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	token, err, failure := mobileUserToken(assignment)
+func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	token, err, failure := mobileUserToken()
 	if err != nil {
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}
 
 	// Resolve explicit track IDs first, so lyrics are fetched for known catalog
 	// entries instead of whichever duplicate the server-side matcher picks.
-	trackIDs := searchMobileTrackIDs(input, token, assignment)
+	trackIDs := searchMobileTrackIDs(input, token)
 	utils.LogInfof("mobile API: search resolved track_ids=%d", len(trackIDs))
 
 	// Stop at the first synced lyrics. Plain lyrics are only used once no track
 	// has synced ones, so those macros are kept until every track was tried.
 	macros := make([]macroBody, 0, len(trackIDs))
 	for _, trackID := range trackIDs {
-		macro, err, failure := mobileGetMacro(buildMobileTrackLyricsQuery(trackID, token), assignment)
+		macro, err, failure := mobileGetMacro(buildMobileTrackLyricsQuery(trackID, token))
 		if err != nil {
 			utils.LogInfof("mobile API: track macro failed track_id=%d reason=%s error=%v", trackID, failure.ReasonValue(), err)
 			continue
@@ -35,13 +35,13 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest, assignment mobileGU
 	// query-based macro call and let the server-side matcher pick the track. If
 	// the API is blocking us, this call reports that as the actual failure.
 	if len(macros) == 0 {
-		return fetchMobileLyricsByQuery(input, token, assignment)
+		return fetchMobileLyricsByQuery(input, token)
 	}
 	return findBestPlainLyrics(macros)
 }
 
-func fetchMobileLyricsByQuery(input lyrics.GetLyricsRequest, token string, assignment mobileGUIDAssignment) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
-	body, err, failure := mobileGetMacro(buildMobileLyricsQuery(input, token), assignment)
+func fetchMobileLyricsByQuery(input lyrics.GetLyricsRequest, token string) (lyrics.GetLyricsResponse, utils.LyricsFormat, error, *utils.LookupFailure, *utils.LookupSuccess) {
+	body, err, failure := mobileGetMacro(buildMobileLyricsQuery(input, token))
 	if err != nil {
 		return lyrics.GetLyricsResponse{}, utils.LyricsFormatUnknown, err, failure, nil
 	}

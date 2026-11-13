@@ -1,5 +1,5 @@
 {
-  description = "Navidrome lyrics scrape plugin dev environment";
+  description = "Navidrome Musixmatch lyrics plugin dev environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";

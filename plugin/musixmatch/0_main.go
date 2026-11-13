@@ -31,7 +31,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, utils
 	}
 
 	// // // Website
-	// Fallback, scrape website
+	// Fallback: look up the lyrics on the website
 	if utils.ConfigUserToken() != "" {
 		utils.LogInfof("FetchLyrics: lookup started source=website artist=%s title=%s album=%s mbz=%s", input.Track.Artist, input.Track.Title, input.Track.Album, input.Track.MBZRecordingID)
 		resp, format, err, failure, success := fetchLyricsViaWebsiteScraping(input)
@@ -47,7 +47,7 @@ func FetchLyrics(input lyrics.GetLyricsRequest) (lyrics.GetLyricsResponse, utils
 	}
 
 	// // // Desktop
-	// Currently disabled because Musixmatch is actively poisoning the responses.
+	// Currently disabled because the desktop API returns placeholder text instead of lyrics.
 	// resp, err, failure, success := fetchLyricsFromDesktopAPI(input)
 
 	// if err == nil && len(resp.Lyrics) > 0 {

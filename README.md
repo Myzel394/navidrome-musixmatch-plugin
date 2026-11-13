@@ -1,6 +1,8 @@
 # Musixmatch Lyrics Plugin for Navidrome
 
-Fetches lyrics from Musixmatch, the official lyrics provider for Spotify. The plugin always tries Musixmatch's free desktop API first, which does not require a user-provided token. If that does not work, the plugin can optionally fall back to website scraping. This plugin supports both synced and plain lyrics.
+Fetches lyrics from Musixmatch, the official lyrics provider for Spotify. The plugin first queries Musixmatch's app API, which does not require a user-provided token. If that does not return lyrics, the plugin can optionally fall back to the Musixmatch website. This plugin supports both synced and plain lyrics.
+
+This is an independent project. It is not affiliated with, endorsed by, or sponsored by Musixmatch.
 
 ## Installation
 
@@ -9,7 +11,7 @@ Fetches lyrics from Musixmatch, the official lyrics provider for Spotify. The pl
 3. Add `navidrome-musixmatch-plugin` to the lyrics priority list (e.g. using envs: `ND_LYRICSPRIORITY=other-lyric-provider,navidrome-musixmatch-plugin`)
 4. In Navidrome, go to **Settings > Plugins > Navidrome Plugin** and toggle it on.
 
-No Musixmatch settings are required for the desktop API path.
+No Musixmatch settings are required for the app API path.
 
 ### Which release should I use?
 
@@ -35,9 +37,9 @@ ND_LYRICSPRIORITY=.lrc,.txt,embedded,navidrome-musixmatch-plugin
 
 ## Optional Website Fallback
 
-If the desktop API cannot find lyrics or is blocked, website scraping is supported as a fallback. This fallback requires a Musixmatch website token. If no token is configured, the fallback is skipped.
+If the app API returns no lyrics or the request fails, the plugin can fall back to the Musixmatch website. This fallback requires a Musixmatch website token. If no token is configured, the fallback is skipped.
 
-To enable website fallback, log in to Musixmatch and extract your auth token using a Chromium-based browser:
+To enable the website fallback, log in to Musixmatch and copy your user token using a Chromium-based browser:
 
 1. Log in to [Musixmatch](https://www.musixmatch.com/).
 2. Open your browser's developer tools (F12) and go to the "Application" tab.
@@ -45,12 +47,12 @@ To enable website fallback, log in to Musixmatch and extract your auth token usi
 4. Find the cookie named `musixmatchUserToken` and click on it.
 5. In the bottom pane, copy the value of the cookie. Make sure "Show URL-decoded" is enabled.
 6. Paste that token into "Musixmatch User Token" in the plugin settings.
-7. If you encounter captchas, repeat the same steps for the `captcha_id` cookie and paste that into "Musixmatch Captcha ID".
+7. If Musixmatch asks you to complete a CAPTCHA, complete it in your browser, then repeat the same steps for the `captcha_id` cookie and paste its value into "Musixmatch Captcha ID".
 
 
-It's recommended to set this plugin's priority to the lowest position, as Musixmatch can block unofficial clients and scrapers.
+It's recommended to set this plugin's priority to the lowest position, as Musixmatch may limit or decline requests from third-party clients.
 
-**Musixmatch is known to aggressively block scrapers, so this plugin may break often. Please always download the latest version to check if your issue is already fixed.**
+**This plugin relies on interfaces that are not part of Musixmatch's documented developer API. Musixmatch can change or restrict them at any time, so the plugin may stop working without notice. Please always download the latest version to check if your issue is already fixed.**
 
 ## This plugin shares analytics
 

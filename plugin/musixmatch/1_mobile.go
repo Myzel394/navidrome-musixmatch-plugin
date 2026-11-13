@@ -33,7 +33,7 @@ func fetchLyricsFromMobileAPI(input lyrics.GetLyricsRequest) (lyrics.GetLyricsRe
 
 	// The search found no track, or every track lookup failed. Fall back to a
 	// query-based macro call and let the server-side matcher pick the track. If
-	// the API is blocking us, this call reports that as the actual failure.
+	// the API rejects the request, this call reports that as the actual failure.
 	if len(macros) == 0 {
 		return fetchMobileLyricsByQuery(input, token)
 	}
